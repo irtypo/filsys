@@ -24,5 +24,11 @@ int read_block(int disk, int block_num, char *buf);
 int write_block(int disk, int block_num, char *buf);
 int close_disk(int disk);
 
+// directory structure
+typedef struct {
+	char name[FNAME_LENGTH];	// name of file
+	size_t size;				// max size of file?
+	size_t nextBlock;			// pointer to next block
+}dir;
 
 #endif

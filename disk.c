@@ -75,9 +75,3 @@ int close_disk(int disk){
 } // end close_disk
 
 
-// directory structure
-typedef struct {
-	char name[FNAME_LENGTH];	// name of file
-	size_t size;				// max size of file?
-	size_t nextBlock;			// pointer to next block
-}dir;
