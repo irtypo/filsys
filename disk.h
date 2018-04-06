@@ -1,14 +1,13 @@
- 
+/**
+* CS 4348.003 Project 4 
+* Anthony Iorio ati140030
+* Lucas Castro ldc140030
+* 
+* Simple File System: Virtual Disk header
+**/
+
 #ifndef DISK_H_
 #define DISK_H_
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 
 #define BLOCK_SIZE 4096
 #define MAX_BLOCKS 4096
@@ -18,5 +17,12 @@
 #define FNAME_LENGTH 16
 
 int fdList[BLOCK_SIZE];
+
+int create_disk(char* filename, size_t nbytes);
+int open_disk(char* filename);
+int read_block(int disk, int block_num, char *buf);
+int write_block(int disk, int block_num, char *buf);
+int close_disk(int disk);
+
 
 #endif

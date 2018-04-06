@@ -1,3 +1,11 @@
+/**
+* CS 4348.003 Project 4 
+* Anthony Iorio ati140030
+* Lucas Castro ldc140030
+* 
+* Simple File System: Test Driver
+**/
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -7,9 +15,26 @@
 #include "disk.h"
 
 int main(int argc, char* argv[]){
-  create_disk("shrek", 1024);
+	char *buf;
+	size_t disk0;
 
-  printf("fd: %d\n", open_disk("shrek"));
-  return 0;
- 
+
+	create_disk("disk0", 1024);					// create disk
+
+
+	disk0 = open_disk("disk0");				// open disk
+	printf("Disk opened. fd: %d\n", disk0);
+
+	buf = "nerds and stuff";
+	write_block(disk0, 0, buf);					// write to disk
+
+
+	if (close(disk0) < 0)						// close disk
+		printf("Error closing disk.\n");
+	else
+		printf("Disk closed. fd: %d\n", disk0);
+
+
+
+	return 0;
 }

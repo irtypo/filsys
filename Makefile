@@ -9,4 +9,4 @@ test.o: test.c
 	gcc -c test.c
 
 clean:
-	rm *.o output shrek
+	rm *.o output disk0
