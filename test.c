@@ -17,16 +17,18 @@
 int main(int argc, char* argv[]){
 	char *buf;
 	size_t disk0;
+	uint words = 1048576;
 
 
-	create_disk("disk0", 1024);					// create disk
+	create_disk("disk0", words);					// create disk
 
 
 	disk0 = open_disk("disk0");				// open disk
 	printf("Disk opened. fd: %d\n", disk0);
 
+
 	buf = "nerds and stuff";
-	write_block(disk0, 0, buf);					// write to disk
+	write_block(disk0, 3, buf);					// write to disk
 
 
 	if (close(disk0) < 0)						// close disk

@@ -14,7 +14,7 @@
 #define MAX_DATA_BLOCKS 3500
 #define MAX_FILES 64
 #define MAX_OPEN_FILES 64
-#define FNAME_LENGTH 16
+#define FNAME_LENGTH 32
 
 int fdList[BLOCK_SIZE];
 
@@ -29,6 +29,6 @@ typedef struct {
 	char name[FNAME_LENGTH];	// name of file
 	size_t size;				// max size of file?
 	size_t nextBlock;			// pointer to next block
-}dir;
+}directory;
 
 #endif
