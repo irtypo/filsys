@@ -19,6 +19,7 @@
 
 int main(int argc, char* argv[]){
 	char writeBuf[BLOCK_SIZE] = "nerds with more stuff\n";
+	char writeBuf22[BLOCK_SIZE] = "get these fucking nerd ass virgins out of here, dude!\n";
 	char readBuf[BLOCK_SIZE];
 	size_t disks[10];
 	uint words = 1048576;
@@ -35,8 +36,11 @@ int main(int argc, char* argv[]){
 
 	// ssize_t num = write(disk0, "stuff written", BLOCK_SIZE);
 	// printf("wrote %d bytes\n", num);
+	write_block(disks[0], 2, writeBuf22);					// write to disk
 
 	read_block(disks[0], 0, readBuf);
+
+	read_block(disks[0], 2, readBuf);
 
 
 	if (close(disks[0]) < 0)						// close disk

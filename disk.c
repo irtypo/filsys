@@ -13,15 +13,12 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <math.h>
-#include <errno.h>
-#include <string.h>
-
-
 
 #include "disk.h"
 
-int count = 0;
+
+int cur_pos;
+
 
 int create_disk(char* filename, size_t nbytes){
 
@@ -46,18 +43,8 @@ int create_disk(char* filename, size_t nbytes){
     }
   
   	cur_pos = lseek(fd, 0, SEEK_SET); //  reposition file pointer
-
-	// add file descriptor
-	fdList[count] = fd;
-	count++;
-
-
-	// dir.name = filename;
-	// dir.size = nbytes;
-	// dir.nextBlock = cur_pos;
 	printf("Disk created. fd: %d\n", fd);
 
-	// close_disk(fd);
 	close(fd);
 	return 0;
 } // end create_disk
@@ -66,42 +53,38 @@ int create_disk(char* filename, size_t nbytes){
 // opens file
 int open_disk(char* filename){
 	int fd = open(filename, O_RDWR);
-	if(fd < 0){
+	if(fd < 0)
 		printf("Error opening disk.\n");
-	}
+	
 	return fd;
 } // end open_disk
 
 
 int read_block(int disk, int block_num, char *buf){
-	int cur_pos;
 
-	cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET);
+	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0))
+		printf("Failed read seek.\n");
 
 	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE)
-		printf("read error\n");
+		printf("Read error.\n");
 	else
-		printf("read: %s\n", buf);
-
+		printf("read: %s", buf);
 
 	return 0;
 }
 
 
-
-
 // writes to file
 int write_block(int disk, int block_num, char *buf){
-	int cur_pos;
 	ssize_t written;
-	cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET);
 
-	printf("seeked to %d\n", cur_pos);
+	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0))
+		printf("Failed read seek.\n");
 
+	if ((written = write(disk, buf, BLOCK_SIZE)) != BLOCK_SIZE)
+		printf("Write error.\n");
 
-	written = write(disk, buf, BLOCK_SIZE);
 	printf("wrote: %d\n", written);
-
 
 	return 0;
 }
