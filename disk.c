@@ -71,10 +71,17 @@ int open_disk(char* filename){
 
 
 int read_block(int disk, int block_num, char *buf){
+	int cur_pos;
 
-	
+	cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET);
+
+	if (read(disk, &buf, BLOCK_SIZE) != BLOCK_SIZE)
+		printf("read error\n");
+	else
+		printf("read: %s\n", buf);
 
 
+	return 0;
 }
 
 
@@ -84,15 +91,6 @@ int read_block(int disk, int block_num, char *buf){
 int write_block(int disk, int block_num, char *buf){
 	int cur_pos;
 	ssize_t written;
-	// locate curr posi4
-
-	// dir.nexBlock / BLOCK_SIZE
-
-	// ((block_num * BLOCK_SIZE) + dir.nexBlock);
-
-	// file size / block size
-
-	char *realbuf = "words and stuff";
 	cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET);
 
 	printf("seeked to %d\n", cur_pos);
@@ -102,7 +100,8 @@ int write_block(int disk, int block_num, char *buf){
 	// 	printf("error");
 	// else
 
-		written = write(disk, "working", BLOCK_SIZE);
+		written = write(disk, buf, 1024);
+		printf("buf: %s\n", buf);
 		printf("wrote stuff: %d\n", written);
 
 

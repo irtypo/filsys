@@ -14,7 +14,7 @@
 #define MAX_DATA_BLOCKS 3500
 #define MAX_FILES 64
 #define MAX_OPEN_FILES 64
-#define FNAME_LENGTH 32
+#define FNAME_LENGTH 16
 
 int fdList[BLOCK_SIZE];
 
