@@ -14,6 +14,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
+#include <string.h>
+
 
 
 #include "disk.h"
@@ -75,7 +78,7 @@ int read_block(int disk, int block_num, char *buf){
 
 	cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET);
 
-	if (read(disk, &buf, BLOCK_SIZE) != BLOCK_SIZE)
+	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE)
 		printf("read error\n");
 	else
 		printf("read: %s\n", buf);
@@ -96,13 +99,8 @@ int write_block(int disk, int block_num, char *buf){
 	printf("seeked to %d\n", cur_pos);
 
 
-	// if (written = (write(disk, "working", BLOCK_SIZE)) > BLOCK_SIZE)
-	// 	printf("error");
-	// else
-
-		written = write(disk, buf, 1024);
-		printf("buf: %s\n", buf);
-		printf("wrote stuff: %d\n", written);
+	written = write(disk, buf, BLOCK_SIZE);
+	printf("wrote: %d\n", written);
 
 
 	return 0;

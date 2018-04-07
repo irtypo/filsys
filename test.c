@@ -11,22 +11,24 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <fcntl.h>
+
+
 #include "disk.h"
 
 int main(int argc, char* argv[]){
-	char *writeBuf = "nerds and stuff\0";
-	char *readBuf;
+	char writeBuf[BLOCK_SIZE] = "nerds with more stuff\n";
+	char readBuf[BLOCK_SIZE];
 	size_t disks[10];
 	uint words = 1048576;
 
 
-	create_disk("disk1", words);					// create disk
+	create_disk("disk0", words);					// create disk
 
 
-	disks[0] = open_disk("disk1");				// open disk
+	disks[0] = open_disk("disk0");				// open disk
 	printf("Disk opened. fd: %d\n", disks[0]);
-
 
 	write_block(disks[0], 0, writeBuf);					// write to disk
 
@@ -34,8 +36,7 @@ int main(int argc, char* argv[]){
 	// ssize_t num = write(disk0, "stuff written", BLOCK_SIZE);
 	// printf("wrote %d bytes\n", num);
 
-	// read_block(disk0, 0, readBuf);
-	// printf("readbuf: %s\n", readBuf);
+	read_block(disks[0], 0, readBuf);
 
 
 	if (close(disks[0]) < 0)						// close disk
@@ -44,7 +45,7 @@ int main(int argc, char* argv[]){
 		printf("Disk closed. fd: %d\n", disks[0]);
 
 
-	// fflush(disk0);
+	// fflush(disks[0]);
 	fflush(stdout);
 
 	return 0;
