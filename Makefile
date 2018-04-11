@@ -12,4 +12,4 @@ test.o: test.c
 	gcc -c test.c
 
 clean:
-	rm *.o output
+	rm *.o output disk0

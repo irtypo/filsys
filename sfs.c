@@ -33,15 +33,15 @@ int sfs_seek(int fd, int offset);
 int make_sfs(char *disk_name){
 	int fd;
 	char SUPER_DATA[BLOCK_SIZE] = "super block stuff\n";
-	size_t FAT[4096];
+	char FAT[4096];
 
 
 	create_disk(disk_name, MAX_BLOCKS*BLOCK_SIZE);			// create disk
 	fd = open_disk(disk_name);								// open disk
 	printf("Disk opened. fd: %d\n", fd);
 
-	write_block(disk_name, 0, SUPER_DATA);					// write super block to disk
-	write_block(disk_name, 1, FAT);							// write FAT to disk
+	write_block(fd, 0, SUPER_DATA);					// write super block to disk
+	write_block(fd, 1, FAT);							// write FAT to disk
 
 
 
