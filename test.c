@@ -14,7 +14,6 @@
 #include <string.h>
 #include <fcntl.h>
 
-
 #include "disk.h"
 
 int main(int argc, char* argv[]){
@@ -24,7 +23,7 @@ int main(int argc, char* argv[]){
 	size_t disks[10];
 	uint words = 1048576;
 
-
+/**
 	create_disk("disk0", words);					// create disk
 
 
@@ -51,6 +50,10 @@ int main(int argc, char* argv[]){
 
 	// fflush(disks[0]);
 	fflush(stdout);
+**/
+
+	make_sfs("disk0");
+
 
 	return 0;
 }

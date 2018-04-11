@@ -29,7 +29,7 @@ int create_disk(char* filename, size_t nbytes){
 
 	fd = open(filename, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777);
 	if (fd < 0) {
-	printf("Error creating disk.\n");
+		printf("Error creating disk.\n");
         return -1;
     }
   
@@ -37,9 +37,9 @@ int create_disk(char* filename, size_t nbytes){
 
 	// null terminate, one char at end of file
 	if ((write(fd, "\0", 1)) < 0) {
-		printf("Error 2 creating disk.\n");
+		printf("Error stretching disk.\n");
 		close(fd);
-        return 1;
+        return -1;
     }
   
   	cur_pos = lseek(fd, 0, SEEK_SET); //  reposition file pointer
@@ -62,12 +62,15 @@ int open_disk(char* filename){
 
 int read_block(int disk, int block_num, char *buf){
 
-	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0))
+	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){
 		printf("Failed read seek.\n");
+		return -1;
+	}
 
-	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE)
+	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE){
 		printf("Read error.\n");
-	else
+		return -1;
+	} else
 		printf("read: %s", buf);
 
 	return 0;
@@ -78,11 +81,15 @@ int read_block(int disk, int block_num, char *buf){
 int write_block(int disk, int block_num, char *buf){
 	ssize_t written;
 
-	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0))
+	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){
 		printf("Failed read seek.\n");
+		return -1;
+	}
 
-	if ((written = write(disk, buf, BLOCK_SIZE)) != BLOCK_SIZE)
+	if ((written = write(disk, buf, BLOCK_SIZE)) != BLOCK_SIZE){
 		printf("Write error.\n");
+		return -1;
+	}
 
 	printf("wrote: %d\n", written);
 
