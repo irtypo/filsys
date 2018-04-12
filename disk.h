@@ -16,7 +16,8 @@
 #define MAX_OPEN_FILES 64
 #define FNAME_LENGTH 16
 
-int fdList[BLOCK_SIZE];
+char superBlock[BLOCK_SIZE];
+char FAT[BLOCK_SIZE];
 
 int create_disk(char* filename, size_t nbytes);
 int open_disk(char* filename);
@@ -27,8 +28,9 @@ int close_disk(int disk);
 // directory structure
 typedef struct {
 	char name[FNAME_LENGTH];	// name of file
-	size_t size;				// max size of file?
+	size_t size;				// current size of file
 	size_t nextBlock;			// pointer to next block
+	size_t numInstances;		// number of open instances 
 }directory;
 
 #endif

@@ -17,10 +17,14 @@
 #include "disk.h"
 
 int main(int argc, char* argv[]){
-	
+	int fd;
 
 	make_sfs("disk0");
-
+	mount_sfs("disk0");
+	sfs_create("file1");
+	fd = sfs_open("file1");
+	sfs_close(fd);
+	sfs_delete("file1");
 
 	return 0;
 }

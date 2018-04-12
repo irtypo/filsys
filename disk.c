@@ -17,91 +17,97 @@
 #include "disk.h"
 
 
-int cur_pos;
+int cur_pos;		// current pointer position
 
 
 int create_disk(char* filename, size_t nbytes){
 
-	int fd;	// file descriptor
-	int result;   // result of lseek, offset location
+	int fd;											// file descriptor
+	int result;										// result of lseek, offset location
 	size_t cur_pos = 0;
 	directory dir;
 
 	fd = open(filename, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777);
 	if (fd < 0) {
-		printf("Error creating disk.\n");
+		printf("Error creating disk. Disk exists.\n");
         return -1;
     }
   
-	cur_pos = lseek(fd, nbytes - 1, SEEK_SET); //  stretch file to file size
+	cur_pos = lseek(fd, nbytes - 1, SEEK_SET);		// stretch file to file size
 
-	// null terminate, one char at end of file
-	if ((write(fd, "\0", 1)) < 0) {
+	if ((write(fd, "\0", 1)) < 0) {					// stretch file
 		printf("Error stretching disk.\n");
 		close(fd);
         return -1;
     }
   
-  	cur_pos = lseek(fd, 0, SEEK_SET); //  reposition file pointer
+  	cur_pos = lseek(fd, 0, SEEK_SET);				// reposition file pointer
 	printf("Disk created. fd: %d\n", fd);
 
 	close(fd);
 	return 0;
-} // end create_disk
+}
 
 
-// opens file
 int open_disk(char* filename){
-	int fd = open(filename, O_RDWR);
+	int fd = open(filename, O_RDWR);				// opens disk
 	if(fd < 0)
 		printf("Error opening disk.\n");
 	
 	return fd;
-} // end open_disk
+}
 
 
 int read_block(int disk, int block_num, char *buf){
 
-	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){
+	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){		// seeks to correct block
 		printf("Failed read seek.\n");
 		return -1;
 	}
 
-	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE){
+	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE){								// reads one block into buffer
 		printf("Read error.\n");
 		return -1;
 	} else
-		printf("read: %s", buf);
+		printf("read: %s\n", buf);
 
 	return 0;
 }
 
 
-// writes to file
 int write_block(int disk, int block_num, char *buf){
-	ssize_t written;
+	ssize_t written;															// number of bytes written
+	int i;
 
-	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){
+	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){		// get tp correct block
 		printf("Failed read seek.\n");
 		return -1;
 	}
 
-	if ((written = write(disk, buf, BLOCK_SIZE)) != BLOCK_SIZE){
+	if ((written = write(disk, buf, BLOCK_SIZE)) > BLOCK_SIZE){					// buffer larger than block size
+		printf("larger than 1 block");
+		// scan FAT for free block.
+		for (i=0; i < MAX_BLOCKS; i++){												// find first free block
+			if (FAT[i] == 0){
+				cur_pos = lseek(disk, (BLOCK_SIZE * i), SEEK_SET);					// seek to next available block
+				written = write(disk, buf + written, BLOCK_SIZE);					// write block
+			}
+		}
+
 		printf("Write error.\n");
 		return -1;
 	}
 
-	printf("wrote: %d\n", written);
+	// printf("wrote: %d\n", written);
 
 	return 0;
 }
 
 
-// closes file
 int close_disk(int disk){
 	// remove(disk);
-	printf("closing fd:%d\n", disk);
+	// printf("closing fd:%d\n", disk);
 	return close(disk);
-} // end close_disk
+}
 
 
