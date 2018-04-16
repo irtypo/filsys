@@ -13,15 +13,14 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "disk.h"
-
 
 int cur_pos;		// current pointer position
 
 
 int create_disk(char* filename, size_t nbytes){
-
 	int fd;											// file descriptor
 	int result;										// result of lseek, offset location
 	size_t cur_pos = 0;
@@ -84,24 +83,14 @@ int write_block(int disk, int block_num, char *buf){
 		return -1;
 	}
 
-	// always false. not working atm
 	written = write(disk, buf, (BLOCK_SIZE));
 	// printf("wrtiten: %d\n", written);jh
-	if (written > BLOCK_SIZE){					// buffer larger than block size
-		printf("larger than 1 block");
-		// scan FAT for free block.
-		for (i=0; i < MAX_BLOCKS; i++){												// find first free block
-			if (FAT[i] == 0){
-				cur_pos = lseek(disk, (BLOCK_SIZE * i), SEEK_SET);					// seek to next available block
-				written = write(disk, buf + written, BLOCK_SIZE);					// write block
-			}
-		}
+	printf("wrote %d blocks\n", written);
+	if (written == -1)
+	    fprintf( stderr, "%s\n", strerror( errno ));
+    	// printf("error: %s\n", strerror(errno));
+	
 
-		printf("Write error.\n");
-		return -1;
-	}
-
-	// printf("wrote: %d\n", written);
 
 	return 0;
 }

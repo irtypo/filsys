@@ -18,6 +18,9 @@
 
 int main(int argc, char* argv[]){
 	int fd[20];
+	char words[BLOCK_SIZE*5];
+	strcpy(words, "writing stuff.\n");
+	int written;
 
 	make_sfs("disk0");
 	mount_sfs("disk0");
@@ -26,12 +29,17 @@ int main(int argc, char* argv[]){
 	fd[0] = sfs_open("file0");
 
 
-	sfs_create("file1");
-	fd[1] = sfs_open("file1");
+	written = sfs_write(fd[0], words, BLOCK_SIZE*5);
+
+	printf("b written: %d\n", written);
+	// sfs_create("file1");
+	// fd[1] = sfs_open("file1");
 
 
 	sfs_close(fd[0]);
-	sfs_close(fd[1]);
+
+	getFAT();
+	// sfs_close(fd[1]);
 
 
 	// sfs_delete("file0");

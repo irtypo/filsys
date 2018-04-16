@@ -34,15 +34,13 @@ int sfs_seek(int fd, int offset);
 
 int fd;
 int i = 0;
-int numFiles = 0;			// current number of files
-directory file;				// directory structure information about file
+directory dirEntries[MAX_FILES];	// array of directory entries
+int dirIndex = 0;
 int numOpenFiles = 0;		// number of open files
 
 // create and open disk
 int make_sfs(char *disk_name){
-	char SUPER_DATA[BLOCK_SIZE] = "super block stuff";				// filler super block data
-	char FAT[4096];													// File Allocation Table
-
+	strcpy(superBlock, "super block data\0");
 
 	if ((create_disk(disk_name, MAX_BLOCKS*BLOCK_SIZE)) < 0)		// create disk
 		return -1;
@@ -51,14 +49,31 @@ int make_sfs(char *disk_name){
 		return -1;
 
 	for (i=0; i < BLOCK_SIZE; i++){					// fill FAT
-		if(i < 2)
-			FAT[i] = 1;								// structure blocks
-		else
-			FAT[i] = 0;								// data blocks
+		switch(i){
+			case 0:
+				FAT[i] = -1;
+			 	break;
+			 case 1:
+			 	FAT[i] = 2;
+			 	break;
+			 case 2:
+			 	FAT[i] = 3;
+			 	break;
+			 case 3:
+			 	FAT[i] = 4;
+			 	break;
+			 case 4:
+			 	FAT[i] = -1;
+			 	break;
+			 default:
+			 	FAT[i] = 0;
+			 	break;
+		}
 	}
 
-	write_block(fd, 0, SUPER_DATA);					// write super block to disk
-	write_block(fd, 1, (char*)FAT);						// write FAT to disk
+	write_block(fd, 0, superBlock);					// write super block to disk
+	write_block(fd, 1, (char*)FAT);					// write FAT to disk
+	// write_block(fd, 5, (char*)dirEntries);					// write directory to disk
 
 	close_disk(fd);									// close disk
 	return 0;
@@ -100,7 +115,7 @@ int sfs_open(char *file_name){
 	}
 
 	numOpenFiles++;									// increment number of open files
-	printf("%s opened. fd: %d\n", file.name, fd);
+	printf("%s opened. fd: %d\n", dirEntries[0].name, fd);
 
 	return fd;
 }
@@ -111,7 +126,7 @@ int sfs_close(int fd){
 	
 	close(fd);								// close file
 	numOpenFiles--;							// decrement number of open files
-	file.numInstances--;					// decrement number of open instances of specific file
+	dirEntries[dirIndex].numInstances--;					// decrement number of open instances of specific file
 
 	printf("fd %d closed.\n", fd);
 	return 0;
@@ -120,26 +135,18 @@ int sfs_close(int fd){
 // create file
 int sfs_create(char *file_name){
 
-	if (numFiles > MAX_FILES)				// max number of files check
+	if (dirIndex > MAX_FILES)				// max number of files check
 		return -1;
 
 	if ((fd = open(file_name, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777)) < 0)		// opens file
 		return -1;
 
-	numFiles++;								// increments total number of files
-
-	// for (i=0; i < MAX_BLOCKS; i++){			// scan for free block
-	// 	if (FAT[i] == 0){
-	// 		FAT[i] = -1;					// occupy last block
-	// 		break;
-	// 	}
-	// }
-
-	strcpy(file.name, file_name);			// update directury strcture information
-	file.size = 0;
-	file.nextBlock = 0;
-	file.numInstances++;
-	printf("%s created. fd: %d\n", file.name, fd);
+	strcpy(dirEntries[dirIndex].name, file_name);			// update directory strcture information
+	dirEntries[dirIndex].size = 0;
+	dirEntries[dirIndex].nextBlock = 0;
+	dirEntries[dirIndex].numInstances++;
+	printf("%s created. fd: %d\n", dirEntries[dirIndex].name, fd);
+	dirIndex++;												// increment number of files in dir
 
 	close(fd);								// close file
 	return 0;
@@ -154,13 +161,15 @@ int sfs_delete(char *file_name){
     	return -1;
 	}
 
-	if (file.numInstances > 0)				// multiple instances open
+	if (dirEntries[dirIndex].numInstances > 0)				// multiple instances open
 		return -1;
 	else									// no instances open
 		unlink(file_name);					// delete file
 
-	if (file.nextBlock < 0)					// file only one block
-		FAT[file.nextBlock] = 0;			// free block
+	dirIndex--;
+
+	if (dirEntries[dirIndex].nextBlock < 0)					// file only one block
+		FAT[dirEntries[dirIndex].nextBlock] = 0;			// free block
 
 
 	printf("%s deleted.\n", file_name);
@@ -169,8 +178,51 @@ int sfs_delete(char *file_name){
 
 // write to a file
 int sfs_write(int fd, void *buf, size_t count){
+	int curBlock;
+	size_t bytesToWrite = count;
+	int nextBlock;
+
+	curBlock = getFreeBlock();
+
+	if (count <= BLOCK_SIZE){
+		if ((write_block(fd, curBlock, (char*)buf)) < 0)
+			return -1;
+	}else{
+		printf("more blocks required\n");
+		while (bytesToWrite > 0){
+			if ((write_block(fd, curBlock, (char*)buf)) < 0)
+				return -1;
+			
+			bytesToWrite -= BLOCK_SIZE;
+			FAT[curBlock] = -1;
+
+			if (bytesToWrite > 0){
+				nextBlock = getFreeBlock(); 
+				FAT[curBlock] = nextBlock;
+			}
+
+			lseek(fd, BLOCK_SIZE, SEEK_SET);					// seek to next available block
+			curBlock = nextBlock;
+		}
+		printf("curBlock: %d\n", curBlock);
+	}
+	FAT[curBlock] = -1;
+
+	return (int)(count - bytesToWrite);
+}
+
+int getFreeBlock(){
+	int i;
+	for (i=596; i < MAX_BLOCKS; i++){						// find first free block
+		if (FAT[i] == 0){
+			printf("freeblock: %d\n", i);
+			return i;
+		}
+	}
+}
 
 
-
-
+void getFAT(){
+	for (i=0; i < MAX_BLOCKS; i++)					// find first free block
+		printf("FAT[%d]: %d\n", i, FAT[i]);
 }
