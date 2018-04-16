@@ -69,7 +69,7 @@ int read_block(int disk, int block_num, char *buf){
 		printf("Read error.\n");
 		return -1;
 	} else
-		printf("read: %s\n", buf);
+		printf("read block: %s\n", buf);
 
 	return 0;
 }
@@ -84,7 +84,10 @@ int write_block(int disk, int block_num, char *buf){
 		return -1;
 	}
 
-	if ((written = write(disk, buf, BLOCK_SIZE)) > BLOCK_SIZE){					// buffer larger than block size
+	// always false. not working atm
+	written = write(disk, buf, (BLOCK_SIZE));
+	// printf("wrtiten: %d\n", written);jh
+	if (written > BLOCK_SIZE){					// buffer larger than block size
 		printf("larger than 1 block");
 		// scan FAT for free block.
 		for (i=0; i < MAX_BLOCKS; i++){												// find first free block

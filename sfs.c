@@ -38,7 +38,7 @@ int numFiles = 0;			// current number of files
 directory file;				// directory structure information about file
 int numOpenFiles = 0;		// number of open files
 
-
+// create and open disk
 int make_sfs(char *disk_name){
 	char SUPER_DATA[BLOCK_SIZE] = "super block stuff";				// filler super block data
 	char FAT[4096];													// File Allocation Table
@@ -58,34 +58,37 @@ int make_sfs(char *disk_name){
 	}
 
 	write_block(fd, 0, SUPER_DATA);					// write super block to disk
-	write_block(fd, 1, FAT);						// write FAT to disk
+	write_block(fd, 1, (char*)FAT);						// write FAT to disk
 
 	close_disk(fd);									// close disk
 	return 0;
 } 
 
-
+// mount disk
 int mount_sfs(char *disk_name){
 	if ((fd = open_disk(disk_name)) < 0)			// open disk
 		return -1;
 
 	 read_block(fd, 0, superBlock);					// read super block from disk into local memory
-	 read_block(fd, 1, FAT);						// read FAT from disk into local memory
+	 read_block(fd, 1, (char*)FAT);						// read FAT from disk into local memory
 
-	 close_disk(fd);								// close disk
+	 printf("disk mounted. fd: %d\n", fd);
+	 // close_disk(fd);								// close disk
 	 return 0;
 }
 
+// unmount disk
 int unmount_sfs(char *disk_name){
 	if ((fd = open_disk(disk_name)) < 0)			// open disk
 		return -1;
 
-	write_block(fd, 1, FAT);						// update FAT on disk
+	write_block(fd, 1, (char*)FAT);						// update FAT on disk
 
 	close_disk(fd);									// close disk
 	return 0;
 }
 
+// open file
 int sfs_open(char *file_name){
 	
 	if (numOpenFiles > MAX_FILES)					// max open file check
@@ -97,11 +100,13 @@ int sfs_open(char *file_name){
 	}
 
 	numOpenFiles++;									// increment number of open files
-	printf("file opened. fd: %d\n", fd);
+	printf("%s opened. fd: %d\n", file.name, fd);
 
 	return fd;
 }
 
+
+// close file
 int sfs_close(int fd){
 	
 	close(fd);								// close file
@@ -112,7 +117,7 @@ int sfs_close(int fd){
 	return 0;
 }
 
-
+// create file
 int sfs_create(char *file_name){
 
 	if (numFiles > MAX_FILES)				// max number of files check
@@ -123,24 +128,31 @@ int sfs_create(char *file_name){
 
 	numFiles++;								// increments total number of files
 
-	for (i=0; i < MAX_BLOCKS; i++){			// scan for free block
-		if (FAT[i] == 0){
-			FAT[i] = -1;					// occupy last block
-			break;
-		}
-	}
+	// for (i=0; i < MAX_BLOCKS; i++){			// scan for free block
+	// 	if (FAT[i] == 0){
+	// 		FAT[i] = -1;					// occupy last block
+	// 		break;
+	// 	}
+	// }
 
 	strcpy(file.name, file_name);			// update directury strcture information
 	file.size = 0;
-	file.nextBlock = i;
+	file.nextBlock = 0;
 	file.numInstances++;
-	printf("file created. fd: %d\n", fd);
+	printf("%s created. fd: %d\n", file.name, fd);
 
 	close(fd);								// close file
 	return 0;
 }
 
+
+// delete file
 int sfs_delete(char *file_name){	
+
+	if(access(file_name, F_OK) < 0){					// existence check
+    	printf("Delete error. File does not exist.\n");
+    	return -1;
+	}
 
 	if (file.numInstances > 0)				// multiple instances open
 		return -1;
@@ -155,7 +167,9 @@ int sfs_delete(char *file_name){
 	return 0;
 }
 
+// write to a file
 int sfs_write(int fd, void *buf, size_t count){
+
 
 
 

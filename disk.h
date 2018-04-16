@@ -17,7 +17,7 @@
 #define FNAME_LENGTH 16
 
 char superBlock[BLOCK_SIZE];
-char FAT[BLOCK_SIZE];
+int FAT[4*BLOCK_SIZE];
 
 int create_disk(char* filename, size_t nbytes);
 int open_disk(char* filename);
