@@ -84,13 +84,7 @@ int write_block(int disk, int block_num, char *buf){
 	}
 
 	written = write(disk, buf, (BLOCK_SIZE));
-	// printf("wrtiten: %d\n", written);jh
-	printf("wrote %d blocks\n", written);
-	if (written == -1)
-	    fprintf( stderr, "%s\n", strerror( errno ));
-    	// printf("error: %s\n", strerror(errno));
-	
-
+	// printf("wrote %d blocks\n", written);
 
 	return 0;
 }

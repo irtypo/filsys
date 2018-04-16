@@ -27,16 +27,29 @@ int main(int argc, char* argv[]){
 
 	sfs_create("file0");
 	fd[0] = sfs_open("file0");
-
-
-	written = sfs_write(fd[0], words, BLOCK_SIZE*5);
-
+	written = sfs_write(fd[0], words, BLOCK_SIZE*20);
 	printf("b written: %d\n", written);
+	sfs_close(fd[0]);
+
+	sfs_create("file1");
+	fd[1] = sfs_open("file1");
+	written = sfs_write(fd[1], words, BLOCK_SIZE*10);
+	printf("b written: %d\n", written);
+	sfs_close(fd[1]);
+
+	if (sfs_delete("file0") < 0)
+		printf("error\n");
+
+	sfs_create("file2");
+	fd[2] = sfs_open("file2");
+	written = sfs_write(fd[2], words, BLOCK_SIZE*30);
+	printf("b written: %d\n", written);
+	sfs_close(fd[2]);
+
 	// sfs_create("file1");
 	// fd[1] = sfs_open("file1");
 
 
-	sfs_close(fd[0]);
 
 	getFAT();
 	// sfs_close(fd[1]);
