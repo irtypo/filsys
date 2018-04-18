@@ -17,14 +17,11 @@
 
 #include "disk.h"
 
-int cur_pos;		// current pointer position
+size_t cur_pos;		// current pointer position
 
 
 int create_disk(char* filename, size_t nbytes){
 	int fd;											// file descriptor
-	int result;										// result of lseek, offset location
-	size_t cur_pos = 0;
-	directory dir;
 
 	fd = open(filename, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777);
 	if (fd < 0) {
@@ -76,7 +73,6 @@ int read_block(int disk, int block_num, char *buf){
 
 int write_block(int disk, int block_num, char *buf){
 	ssize_t written;															// number of bytes written
-	int i;
 
 	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){		// get tp correct block
 		printf("Failed read seek.\n");
