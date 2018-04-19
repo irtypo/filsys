@@ -36,9 +36,9 @@ int fd;
 int i = 0;
 directory dirEntries[MAX_FILES];	// array of directory entries
 int dirIndex = 0;
-int numOpenFiles = 0;		// number of open files
 int curBlock;
 int nextBlock;
+char *fdTable[MAX_OPEN_FILES];
 
 // create and open disk
 int make_sfs(char *disk_name){
@@ -107,8 +107,8 @@ int unmount_sfs(char *disk_name){
 
 // open file
 int sfs_open(char *file_name){
-	
-	if (numOpenFiles > MAX_FILES)								// max open file check
+	char name[FNAME_LENGTH];
+	if (directoryCount() > MAX_FILES)								// max open file check
 		return -1;
 
 	if ((fd = open(file_name, O_RDWR, (mode_t)0777)) < 0){		// open file
@@ -116,8 +116,11 @@ int sfs_open(char *file_name){
 		return -1;
 	}
 
-	numOpenFiles++;												// increment number of open files
+	dirIndex = getIndexFromName(file_name);						// get correct file directory from name
+	dirEntries[dirIndex].numInstances++;
+
 	printf("%s opened. fd: %d\n", dirEntries[dirIndex].name, fd);
+	fdTable[fd] = file_name;
 
 	return fd;
 }
@@ -125,10 +128,16 @@ int sfs_open(char *file_name){
 
 // close file
 int sfs_close(int fd){
-	
-	close(fd);										// close file
-	numOpenFiles--;									// decrement number of open files
+
+
+
+	if (close(fd) < 0)
+		return -1;
+
+	dirIndex = getIndexFromName(fdTable[fd]);			// get correct file directory from name
 	dirEntries[dirIndex].numInstances--;			// decrement number of open instances of specific file
+
+
 
 	printf("fd %d closed.\n", fd);
 	return 0;
@@ -136,6 +145,8 @@ int sfs_close(int fd){
 
 // create file
 int sfs_create(char *file_name){
+
+	dirIndex = getFreeDirectory();										// get correct file directory from name
 
 	if (dirIndex > MAX_FILES)													// max number of files check
 		return -1;
@@ -146,11 +157,10 @@ int sfs_create(char *file_name){
 	strcpy(dirEntries[dirIndex].name, file_name);								// update directory strcture information
 	dirEntries[dirIndex].size = 0;
 	dirEntries[dirIndex].nextBlock = 0;
-	dirEntries[dirIndex].numInstances++;
 	printf("%s created. fd: %d\n", dirEntries[dirIndex].name, fd);
-	dirIndex++;																	// increment number of files in dir
+	// dirIndex++;																	// increment number of files in dir
 
-	printf("dirIndex: %d\n", dirIndex);
+	// printf("dirIndex: %d\n", dirIndex);
 	close(fd);																	// close file
 	return 0;
 }
@@ -158,39 +168,50 @@ int sfs_create(char *file_name){
 
 // delete file
 int sfs_delete(char *file_name){	
+	
 	if(access(file_name, F_OK) < 0){									// existence check
-    	printf("Delete error. File does not exist.\n");
+    	printf("Delete on %s failed. File does not exist.\n", file_name);
     	return -1;
 	}
+
 	dirIndex = getIndexFromName(file_name);
 
 	// printf("dirIndex: %d\n", dirIndex);
-	printf("instances: %d\n", dirEntries[dirIndex].numInstances);
+	// printf("instances of %s: %d\n", dirEntries[dirIndex].name, dirEntries[dirIndex].numInstances);
 
-	if (dirEntries[dirIndex].numInstances > 0)							// multiple instances open
+	if (dirEntries[dirIndex].numInstances > 0){							// multiple instances open
+		printf("Delete on %s failed. Open instances.\n", file_name);
 		return -1;
-	else																// no instances open
+	} else{																// no instances open
 		unlink(file_name);												// delete file
 	
 
-	curBlock = dirEntries[dirIndex].nextBlock; 
-	printf("curblock: %d\n", curBlock);
-	while (FAT[curBlock] > 0){
-		nextBlock = FAT[curBlock];
-		FAT[curBlock] = 0;												// free block
+		curBlock = dirEntries[dirIndex].nextBlock; 
+		// printf("curblock: %d\n", curBlock);
+		while (FAT[curBlock] > 0){
+			nextBlock = FAT[curBlock];
+			FAT[curBlock] = 0;												// free block
+		}	// i dont think this works.
+
+		if (FAT[curBlock] == -1)
+			FAT[curBlock] = 0;
+		
+		// dirEntries[dirIndex]name = NULL;
+
+		strcpy(dirEntries[dirIndex].name, "");					// clean dir array
+		dirEntries[dirIndex].size = 0;
+		dirEntries[dirIndex].nextBlock = 0;
+		dirEntries[dirIndex].numInstances = 0;
+		
+
+		// dirIndex--;
+		// if (dirEntries[dirIndex].nextBlock != 0)							// file only one block
+
+		printf("%s deleted.\n", file_name);
 	}
 
-	if (FAT[curBlock] == -1)
-		FAT[curBlock] = 0;
-	
-
-	dirIndex--;
-	// if (dirEntries[dirIndex].nextBlock != 0)							// file only one block
 
 
-
-
-	printf("%s deleted.\n", file_name);
 	return 0;
 }
 
@@ -231,6 +252,62 @@ int sfs_write(int fd, void *buf, size_t count){
 	return (int)(count - bytesToWrite);
 }
 
+// read file
+int sfs_read(int fd, void *buf, size_t count){
+	size_t bytesToRead = count;
+
+
+	curBlock = 0;
+	// if ((curBlock = getFreeBlock()) == -1337)							// disk full
+	// 	return 0;
+
+
+	// if (count <= BLOCK_SIZE){
+	// 	if ((read_block(fd, curBlock, (char*)buf)) < 0)
+	// 		return -1;
+	// }else{
+	// 	while (bytesToRead > 0){
+	// 		if ((read_block(fd, curBlock, (char*)buf)) < 0)
+	// 			return -1;
+			
+	// 		bytesToRead -= BLOCK_SIZE;
+	// 		curBlock = FAT[curBlock] = -1;
+
+	// 		if (bytesToRead > 0){
+	// 			// nextBlock = getFreeBlock();
+	// 			if ((nextBlock = getFreeBlock()) == -1337)
+	// 				return 0;
+	// 			else 
+	// 				FAT[curBlock] = nextBlock;
+	// 		}
+
+	// 		lseek(fd, BLOCK_SIZE, SEEK_SET);							// seek to next available block
+	// 		curBlock = nextBlock;
+	// 	}
+	// 	// printf("curBlock: %d\n", curBlock);
+	// }
+	// FAT[curBlock] = -1;
+
+	return (int)(count - bytesToRead);
+}
+
+
+int sfs_seek(int fd, int offset){
+	return lseek(fd, offset, SEEK_SET);		// stretch file to file size
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 int getFreeBlock(){
 	int i;
 	for (i=596; i < MAX_BLOCKS; i++){									// find first free block
@@ -247,8 +324,30 @@ void getFAT(){
 }
 
 int getIndexFromName(char *name){
-	int i;
 	for (i = 0; i < MAX_FILES; i++)
 		if (strcmp(dirEntries[i].name, name) == 0)
 			return i;
 }
+
+void printDirectory(){
+	int i;
+	for (i = 0; i < MAX_FILES; i++)
+		if (strcmp(dirEntries[i].name, "") != 0)
+			printf("dir[%d].name: %s\n", i, dirEntries[i].name);
+}
+
+int directoryCount(){
+	int count = 0;
+	for (i = 0; i < MAX_FILES; i++)
+		if (strcmp(dirEntries[i].name, "") != 0)
+			count++;
+
+	return count;
+}
+
+int getFreeDirectory(){
+	for (i = 0; i < MAX_FILES; i++)
+		if (strcmp(dirEntries[i].name, "") == 0)
+			return i;
+}
+
