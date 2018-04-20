@@ -75,11 +75,12 @@ int write_block(int disk, int block_num, char *buf){
 	ssize_t written;															// number of bytes written
 
 	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){		// get tp correct block
-		printf("Failed read seek.\n");
+		printf("Failed write seek.\n");
 		return -1;
 	}
 
 	written = write(disk, buf, (BLOCK_SIZE));
+	// FAT[block_num] = -1;
 	// printf("wrote %d blocks\n", written);
 
 	return 0;

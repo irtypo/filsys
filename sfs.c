@@ -32,10 +32,13 @@ int sfs_read(int fd, void *buf, size_t count);
 int sfs_write(int fd, void *buf, size_t count);
 int sfs_seek(int fd, int offset);
 
+
+void clearDirectory();
+
 int fd;
 int i = 0;
 directory dirEntries[MAX_FILES];	// array of directory entries
-int dirIndex = 0;
+int curFile = 0;
 int curBlock;
 int nextBlock;
 char *fdTable[MAX_OPEN_FILES];
@@ -73,6 +76,7 @@ int make_sfs(char *disk_name){
 		}
 	}
 
+	clearDirectory();
 	write_block(fd, 0, superBlock);					// write super block to disk
 	write_block(fd, 1, (char*)FAT);					// write FAT to disk
 	// write_block(fd, 5, (char*)dirEntries);		// write directory to disk
@@ -89,7 +93,7 @@ int mount_sfs(char *disk_name){
 	 read_block(fd, 0, superBlock);					// read super block from disk into local memory
 	 read_block(fd, 1, (char*)FAT);					// read FAT from disk into local memory
 
-	 printf("disk mounted. fd: %d\n", fd);
+	 // printf("disk mounted. fd: %d\n", fd);
 	 // close_disk(fd);								// close disk
 	 return 0;
 }
@@ -116,11 +120,11 @@ int sfs_open(char *file_name){
 		return -1;
 	}
 
-	dirIndex = getIndexFromName(file_name);						// get correct file directory from name
-	dirEntries[dirIndex].numInstances++;
-
-	printf("%s opened. fd: %d\n", dirEntries[dirIndex].name, fd);
 	fdTable[fd] = file_name;
+	curFile = getDirIndexFromName(file_name);						// get correct file directory from name
+	dirEntries[curFile].numInstances++;
+
+	printf("%s opened. fd: %d\n", dirEntries[curFile].name, fd);
 
 	return fd;
 }
@@ -134,8 +138,8 @@ int sfs_close(int fd){
 	if (close(fd) < 0)
 		return -1;
 
-	dirIndex = getIndexFromName(fdTable[fd]);			// get correct file directory from name
-	dirEntries[dirIndex].numInstances--;			// decrement number of open instances of specific file
+	curFile = getDirIndexFromName(fdTable[fd]);			// get correct file directory from name
+	dirEntries[curFile].numInstances--;			// decrement number of open instances of specific file
 
 
 
@@ -146,21 +150,21 @@ int sfs_close(int fd){
 // create file
 int sfs_create(char *file_name){
 
-	dirIndex = getFreeDirectory();										// get correct file directory from name
+	curFile = getFreeDirectory();										// get correct file directory from name
 
-	if (dirIndex > MAX_FILES)													// max number of files check
+	if (curFile > MAX_FILES)													// max number of files check
 		return -1;
 
 	if ((fd = open(file_name, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777)) < 0)	// opens file
 		return -1;
 
-	strcpy(dirEntries[dirIndex].name, file_name);								// update directory strcture information
-	dirEntries[dirIndex].size = 0;
-	dirEntries[dirIndex].nextBlock = 0;
-	printf("%s created. fd: %d\n", dirEntries[dirIndex].name, fd);
-	// dirIndex++;																	// increment number of files in dir
+	strcpy(dirEntries[curFile].name, file_name);								// update directory strcture information
+	dirEntries[curFile].size = 0;
+	dirEntries[curFile].nextBlock = 0;
+	printf("%s created. fd: %d\n", dirEntries[curFile].name, fd);
+	// curFile++;																	// increment number of files in dir
 
-	// printf("dirIndex: %d\n", dirIndex);
+	// printf("curFile: %d\n", curFile);
 	close(fd);																	// close file
 	return 0;
 }
@@ -174,19 +178,19 @@ int sfs_delete(char *file_name){
     	return -1;
 	}
 
-	dirIndex = getIndexFromName(file_name);
+	curFile = getDirIndexFromName(file_name);
 
-	// printf("dirIndex: %d\n", dirIndex);
-	// printf("instances of %s: %d\n", dirEntries[dirIndex].name, dirEntries[dirIndex].numInstances);
+	// printf("curFile: %d\n", curFile);
+	// printf("instances of %s: %d\n", dirEntries[curFile].name, dirEntries[curFile].numInstances);
 
-	if (dirEntries[dirIndex].numInstances > 0){							// multiple instances open
+	if (dirEntries[curFile].numInstances > 0){							// multiple instances open
 		printf("Delete on %s failed. Open instances.\n", file_name);
 		return -1;
 	} else{																// no instances open
 		unlink(file_name);												// delete file
 	
 
-		curBlock = dirEntries[dirIndex].nextBlock; 
+		curBlock = dirEntries[curFile].nextBlock; 
 		// printf("curblock: %d\n", curBlock);
 		while (FAT[curBlock] > 0){
 			nextBlock = FAT[curBlock];
@@ -196,16 +200,16 @@ int sfs_delete(char *file_name){
 		if (FAT[curBlock] == -1)
 			FAT[curBlock] = 0;
 		
-		// dirEntries[dirIndex]name = NULL;
+		// dirEntries[curFile]name = NULL;
 
-		strcpy(dirEntries[dirIndex].name, "");					// clean dir array
-		dirEntries[dirIndex].size = 0;
-		dirEntries[dirIndex].nextBlock = 0;
-		dirEntries[dirIndex].numInstances = 0;
+		strcpy(dirEntries[curFile].name, "");					// clean dir array
+		dirEntries[curFile].size = 0;
+		dirEntries[curFile].nextBlock = 0;
+		dirEntries[curFile].numInstances = 0;
 		
 
-		// dirIndex--;
-		// if (dirEntries[dirIndex].nextBlock != 0)							// file only one block
+		// curFile--;
+		// if (dirEntries[curFile].nextBlock != 0)							// file only one block
 
 		printf("%s deleted.\n", file_name);
 	}
@@ -219,6 +223,8 @@ int sfs_delete(char *file_name){
 int sfs_write(int fd, void *buf, size_t count){
 	size_t bytesToWrite = count;
 
+	printf("fd: %d\n", fd);
+	
 	// curBlock = getFreeBlock();
 	if ((curBlock = getFreeBlock()) == -1337)							// disk full
 		return 0;
@@ -248,6 +254,11 @@ int sfs_write(int fd, void *buf, size_t count){
 		// printf("curBlock: %d\n", curBlock);
 	}
 	FAT[curBlock] = -1;
+
+	printf("curName: %s\n", fdTable[fd]);
+	curFile = getDirIndexFromName(fdTable[fd]);
+	printf("curFile: %d\n", curFile);
+	// dirEntries[curFile].size += count;	
 
 	return (int)(count - bytesToWrite);
 }
@@ -293,7 +304,13 @@ int sfs_read(int fd, void *buf, size_t count){
 
 
 int sfs_seek(int fd, int offset){
-	return lseek(fd, offset, SEEK_SET);		// stretch file to file size
+	// how large is the file?
+
+	// dirEntries[curFile].name
+
+	// lseek(fd, offset, SEEK_SET)
+
+	return 0;		// stretch file to file size
 }
 
 
@@ -303,13 +320,7 @@ int sfs_seek(int fd, int offset){
 
 
 
-
-
-
-
-
 int getFreeBlock(){
-	int i;
 	for (i=596; i < MAX_BLOCKS; i++){									// find first free block
 		if (FAT[i] == 0)
 			return i;
@@ -323,17 +334,20 @@ void getFAT(){
 		printf("FAT[%d]: %d\n", i, FAT[i]);
 }
 
-int getIndexFromName(char *name){
-	for (i = 0; i < MAX_FILES; i++)
-		if (strcmp(dirEntries[i].name, name) == 0)
+int getDirIndexFromName(char *name){
+	printf("checking dir for %s\n", name);
+	for (i = 0; i < MAX_FILES; i++){
+		if (strcmp(dirEntries[i].name, name) == 0){
+			printf("%s in entry %d\n", dirEntries[i].name, i);
 			return i;
+		}
+	}
 }
 
 void printDirectory(){
-	int i;
 	for (i = 0; i < MAX_FILES; i++)
 		if (strcmp(dirEntries[i].name, "") != 0)
-			printf("dir[%d].name: %s\n", i, dirEntries[i].name);
+			printf("dir[%d]. name: %s. size: %s\n", i, dirEntries[i].name, dirEntries[i].size);
 }
 
 int directoryCount(){
@@ -351,3 +365,17 @@ int getFreeDirectory(){
 			return i;
 }
 
+void printfdTable(){
+	for (i = 0; i < MAX_FILES; i++)
+		if (strcmp(fdTable[i], "") != 0)
+			printf("fdTable[%d]: %s\n", i, fdTable[i]);
+}
+
+void clearDirectory(){
+	for (i = 0; i < MAX_FILES; i++){
+		strcpy(dirEntries[i].name, "");
+		dirEntries[i].size = 0;
+		dirEntries[i].nextBlock = 0;
+		dirEntries[i].numInstances = 0;
+	} 
+}
