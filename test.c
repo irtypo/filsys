@@ -15,58 +15,60 @@
 #include <fcntl.h>
 
 #include "disk.h"
+#include "sfs.h"
 
 int main(int argc, char* argv[]){
 	int fd[20];
-	char words[BLOCK_SIZE*5];
-	strcpy(words, "writing stuff.\n");
+	char wordsToWrite[BLOCK_SIZE];
+	char wordsToRead[BLOCK_SIZE];
+	strcpy(wordsToWrite, "words and stuff");
 	int written;
 
 	make_sfs("disk0");
 	mount_sfs("disk0");
 
-	sfs_create("file0");
-	fd[0] = sfs_open("file0");
-	written = sfs_write(fd[0], words, BLOCK_SIZE);
-	// printf("b written: %d\n", written);
-	// sfs_close(fd[0]);
+	// sfs_create("file0");
+	// fd[0] = sfs_open("file0");
+	// written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE*5);
 
 	// sfs_create("file1");
 	// fd[1] = sfs_open("file1");
-	// written = sfs_write(fd[1], words, BLOCK_SIZE*10);
-	// printf("b written: %d\n", written);
-	// sfs_close(fd[1]);
+	// written = sfs_write(fd[1], wordsToWrite, BLOCK_SIZE*2);
 
+
+	// printfdTable();
+	// printFAT();
+	// printDirectory();
+
+	// sfs_close(fd[0]);
 	// sfs_delete("file0");
-	// sfs_delete("file1");
 
 	// sfs_create("file2");
 	// fd[2] = sfs_open("file2");
-	// written = sfs_write(fd[2], words, BLOCK_SIZE*30);
-	// printf("b written: %d\n", written);
-	// sfs_close(fd[2]);
-	// sfs_delete("file2");
-
-	// sfs_create("file1");
-	// fd[1] = sfs_open("file1");
+	// written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*10);
 
 
 
-	// getFAT();
 	// printfdTable();
-	printDirectory();
-	// printf("files in dir: %d\n", directoryCount());
+	// printFAT();
+	// printDirectory();
 
-	// sfs_read(fd[0]);
-	
-	sfs_close(fd[0]);
 	// sfs_close(fd[1]);
 	// sfs_close(fd[2]);
 
-	// sfs_delete("file0");
+	// sfs_delete("file1");
+	// sfs_delete("file2");
 
 
-	// sfs_delete("file0");
+	// printfdTable();
+	// printFAT();
+	// printDirectory();
+
+	unmount_sfs("disk0");
+
+	// printfdTable();
+	// printFAT();
+	// printDirectory();
 
 	return 0;
 }

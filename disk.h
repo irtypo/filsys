@@ -29,7 +29,7 @@ int close_disk(int disk);
 typedef struct {
 	char name[FNAME_LENGTH];	// name of file
 	size_t size;				// current size of file
-	size_t nextBlock;			// pointer to next block
+	size_t firstBlock;			// pointer to next block
 	size_t numInstances;		// number of open instances 
 }directory;
 

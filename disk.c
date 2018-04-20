@@ -16,9 +16,9 @@
 #include <errno.h>
 
 #include "disk.h"
+#include "sfs.h"
 
-size_t cur_pos;		// current pointer position
-
+size_t curPosition;		// current pointer position
 
 int create_disk(char* filename, size_t nbytes){
 	int fd;											// file descriptor
@@ -29,7 +29,7 @@ int create_disk(char* filename, size_t nbytes){
         return -1;
     }
   
-	cur_pos = lseek(fd, nbytes - 1, SEEK_SET);		// stretch file to file size
+	curPosition = lseek(fd, nbytes - 1, SEEK_SET);		// stretch file to file size
 
 	if ((write(fd, "\0", 1)) < 0) {					// stretch file
 		printf("Error stretching disk.\n");
@@ -37,7 +37,7 @@ int create_disk(char* filename, size_t nbytes){
         return -1;
     }
   
-  	cur_pos = lseek(fd, 0, SEEK_SET);				// reposition file pointer
+  	curPosition = lseek(fd, 0, SEEK_SET);				// reposition file pointer
 	printf("Disk created. fd: %d\n", fd);
 
 	close(fd);
@@ -56,7 +56,7 @@ int open_disk(char* filename){
 
 int read_block(int disk, int block_num, char *buf){
 
-	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){		// seeks to correct block
+	if (lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0){		// seeks to correct block
 		printf("Failed read seek.\n");
 		return -1;
 	}
@@ -65,7 +65,7 @@ int read_block(int disk, int block_num, char *buf){
 		printf("Read error.\n");
 		return -1;
 	} else
-		printf("read block: %s\n", buf);
+		// printf("read block: %s\n", buf);
 
 	return 0;
 }
@@ -73,15 +73,18 @@ int read_block(int disk, int block_num, char *buf){
 
 int write_block(int disk, int block_num, char *buf){
 	ssize_t written;															// number of bytes written
-
-	if ((cur_pos = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0)){		// get tp correct block
-		printf("Failed write seek.\n");
+	if (curPosition = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0){		// get tp correct block
+		printf("Failed write seek. cp: %d\n", curPosition);
+	    // printf("error: %s\n", strerror(errno));
 		return -1;
 	}
 
-	written = write(disk, buf, (BLOCK_SIZE));
-	// FAT[block_num] = -1;
-	// printf("wrote %d blocks\n", written);
+	if ((written = write(disk, buf, BLOCK_SIZE)) < 0){
+		printf("Write failure.\n");
+		return -1;
+	}
+	// printf("wrote %d bytes\n", written);
+
 
 	return 0;
 }
