@@ -62,11 +62,9 @@ int make_sfs(char *disk_name){
 		}
 	}
 
-	// clearDirectory();
 	write_block(fd, 0, superBlock);					// write super block to disk
 	write_block(fd, 1, (char*)FAT);					// write FAT to disk
 	// write_block(fd, 5, (char*)dirEntries);		// write directory to disk
-	// write failure ^^
 
 	close_disk(fd);									// close disk
 	return 0;
@@ -81,29 +79,24 @@ int mount_sfs(char *disk_name){
 	
 	read_block(fd, 0, superBlock);					// read super block from disk into local memory
 	read_block(fd, 1, (char*)FAT);					// read FAT from disk into local memory
-	// read_block(fd, 5, (char*)dirEntries);					// read FAT from disk into local memory
+	// read_block(fd, 5, (char*)dirEntries);		// read FAT from disk into local memory
 	return 0;
 }
 
 // unmount disk
 int unmount_sfs(char *disk_name){
-	// if ((fd = open_disk(disk_name)) < 0)			// open disk
-	// 	return -1;
-	
 
-	// for (i = 0; i < MAX_OPEN_FILES; i++)
-	// 	if (strcmp(fdTable[i], disk_name) == 0)
-	// 		fd = i;
-			fd = 3;
-
-	// printf("fd: %d\n", fd);
+	for (i = 0; i < MAX_OPEN_FILES; i++)
+		if (fdTable[i])
+			fd = i;
 
 	write_block(fd, 0, (char*)superBlock);					// update FAT on disk
-	// for (i = 1; i < 5; i++)
-	// 	write_block(fd, i, (char*)FAT);					// update FAT on disk
+	for (i = 1; i < 5; i++)
+		write_block(fd, i, (char*)FAT);					// update FAT on disk
 	// write_block(fd, 5, (char*)dirEntries);					// update FAT on disk
 	
 	close_disk(fd);
+	printf("%s(%d) unmounted .\n", disk_name, fd);
 	return 0;
 }
 
@@ -122,7 +115,7 @@ int sfs_open(char *file_name){
 	curFile = getDirIndexFromName(file_name);						// get correct file directory from name
 	dirEntries[curFile].numInstances++;
 
-	printf("%s opened. fd: %d\n", dirEntries[curFile].name, fd);
+	printf("%s(%d) opened.\n", dirEntries[curFile].name, fd);
 
 	return fd;
 }
@@ -139,7 +132,7 @@ int sfs_close(int fd){
 
 	fdTable[fd] = NULL;									// remove fd from fdTable
 
-	printf("fd %d closed.\n", fd);
+	printf("%s(%d) closed.\n", dirEntries[curFile].name, fd);
 	return 0;
 }
 
@@ -154,11 +147,10 @@ int sfs_create(char *file_name){
 	if ((fd = open(file_name, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777)) < 0)	// opens file
 		return -1;
 
-	// printf("curFile: %d\n", curFile);
 	strcpy(dirEntries[curFile].name, file_name);								// update directory strcture information
 	dirEntries[curFile].size = 0;
 	dirEntries[curFile].firstBlock = 0;
-	printf("%s created. fd: %d\n", dirEntries[curFile].name, fd);
+	printf("%s(%d) created.\n", dirEntries[curFile].name, fd);
 
 	close(fd);																	// close file
 	return 0;
@@ -340,15 +332,6 @@ void printfdTable(){
 	for (i = 0; i < MAX_FILES; i++)
 		if (fdTable[i])
 			printf("\tfdTable[%d]: %s\n", i, fdTable[i]);
-}
-
-void clearDirectory(){
-	for (i = 0; i < MAX_FILES; i++){
-		strcpy(dirEntries[i].name, "");
-		dirEntries[i].size = 0;
-		dirEntries[i].firstBlock = 0;
-		dirEntries[i].numInstances = 0;
-	} 
 }
 
 

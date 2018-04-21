@@ -27,9 +27,9 @@ int main(int argc, char* argv[]){
 	make_sfs("disk0");
 	mount_sfs("disk0");
 
-	// sfs_create("file0");
-	// fd[0] = sfs_open("file0");
-	// written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE*5);
+	sfs_create("file0");
+	fd[0] = sfs_open("file0");
+	written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE*5);
 
 	// sfs_create("file1");
 	// fd[1] = sfs_open("file1");
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
 	// printFAT();
 	// printDirectory();
 
-	// sfs_close(fd[0]);
+	sfs_close(fd[0]);
 	// sfs_delete("file0");
 
 	// sfs_create("file2");

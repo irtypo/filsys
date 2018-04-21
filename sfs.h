@@ -34,6 +34,5 @@ int getFreeDirectory();
 void printDirectory();
 void printFAT();
 void printfdTable();
-void clearDirectory();
 
 #endif

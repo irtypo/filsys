@@ -62,7 +62,7 @@ int read_block(int disk, int block_num, char *buf){
 	}
 
 	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE){								// reads one block into buffer
-		printf("Read error.\n");
+		printf("Read failure.\n");
 		return -1;
 	} else
 		// printf("read block: %s\n", buf);
@@ -78,6 +78,12 @@ int write_block(int disk, int block_num, char *buf){
 	    // printf("error: %s\n", strerror(errno));
 		return -1;
 	}
+
+	if ((write(disk, "\0", 1)) < 0) {					// stretch file
+		printf("Error stretching disk.\n");
+		// close(fd);
+        return -1;
+    }
 
 	if ((written = write(disk, buf, BLOCK_SIZE)) < 0){
 		printf("Write failure.\n");
