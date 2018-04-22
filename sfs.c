@@ -209,14 +209,15 @@ int sfs_write(int fd, void *buf, size_t count){
 	curFile = getDirIndexFromName(fdTable[fd]);							// find file in directory
 
 	if (count <= BLOCK_SIZE){										// only writting one block
-		if ((write_block(fd, curBlock, (char*)buf)) < 0)
+		if ((write_block(fd, 0, (char*)buf)) < 0)
 			return -1;
 		
 		dirEntries[curFile].size = count;	
 	}else{															// writing multiple blocks
-		while (bytesToWrite > 0){										// more bytes to write
-			if ((write_block(fd, curBlock, (char*)buf)) < 0)			// write a block
-				return -1;
+		int j = 0;
+		while (bytesToWrite > 0){							// more bytes to write
+			if ((write_block(fd, j, (char*)buf)) < 0)			// write a block
+				return -1;											// using j is fucking awful but it works
 			
 			// printf("Wrote a block.\n");	
 			bytesToWrite -= BLOCK_SIZE;									// less bytes to write
@@ -231,6 +232,7 @@ int sfs_write(int fd, void *buf, size_t count){
 			}
 
 			curBlock = nextBlock;
+			j++;
 		}
 		dirEntries[curFile].size += count;	
 	}
@@ -285,7 +287,7 @@ int sfs_seek(int fd, int offset){
 
 
 int getFreeBlock(){
-	for (i=596; i < MAX_BLOCKS; i++){									// find first free block
+	for (i=FIRST_DATA_BLOCK; i < MAX_BLOCKS; i++){									// find first free block
 		if (FAT[i] == 0)
 			return i;
 	}

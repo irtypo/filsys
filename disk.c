@@ -73,23 +73,19 @@ int read_block(int disk, int block_num, char *buf){
 
 int write_block(int disk, int block_num, char *buf){
 	ssize_t written;															// number of bytes written
+	
+
 	if (curPosition = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0){		// get tp correct block
 		printf("Failed write seek. cp: %d\n", curPosition);
 	    // printf("error: %s\n", strerror(errno));
 		return -1;
 	}
 
-	if ((write(disk, "\0", 1)) < 0) {					// stretch file
-		printf("Error stretching disk.\n");
-		// close(fd);
-        return -1;
-    }
-
 	if ((written = write(disk, buf, BLOCK_SIZE)) < 0){
 		printf("Write failure.\n");
 		return -1;
 	}
-	// printf("wrote %d bytes\n", written);
+	printf("wrote %d bytes\n", written);
 
 
 	return 0;

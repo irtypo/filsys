@@ -10,6 +10,7 @@
 #define SFS_H_
 
 #define MAX_DISKS 3
+#define FIRST_DATA_BLOCK 596
 
 
 char *fdTable[MAX_OPEN_FILES];
