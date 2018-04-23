@@ -38,11 +38,11 @@ int make_sfs(char *disk_name){
 
 	fillFAT();														// fill FAT control blocks
 
-	write_block(fd, 0, superBlock);					// write super block to disk
-	write_block(fd, 1, (char*)FAT);					// write FAT to disk
-	// write_block(fd, 5, (char*)dirEntries);		// write directory to disk
+	write_block(fd, 0, superBlock);									// write super block to disk
+	write_block(fd, 1, (char*)FAT);									// write FAT to disk
+	// write_block(fd, 5, (char*)dirEntries);						// write directory to disk
 
-	close_disk(fd);									// close disk
+	close_disk(fd);													// close disk
 	return 0;
 } 
 
@@ -51,8 +51,7 @@ int mount_sfs(char *disk_name){
 	if ((fd = open_disk(disk_name)) < 0)			// open disk
 		return -1;
 
-	fdNameTable[fd] = disk_name; 
-	
+	fdNameTable[fd] = disk_name; 					// log fd name
 	read_block(fd, 0, superBlock);					// read super block from disk into local memory
 	read_block(fd, 1, (char*)FAT);					// read FAT from disk into local memory
 	// read_block(fd, 5, (char*)dirEntries);		// read FAT from disk into local memory
@@ -63,37 +62,35 @@ int mount_sfs(char *disk_name){
 int unmount_sfs(char *disk_name){
 
 	for (i = 0; i < MAX_OPEN_FILES; i++)
-		if (fdNameTable[i])
+		if (fdNameTable[i])								// get disk fd from name
 			fd = i;
 
-	write_block(fd, 0, (char*)superBlock);					// update FAT on disk
+	write_block(fd, 0, (char*)superBlock);				// write superblock to disk
 	for (i = 1; i < 5; i++)
-		write_block(fd, i, (char*)FAT);					// update FAT on disk
-	// write_block(fd, 5, (char*)dirEntries);					// update FAT on disk
+		write_block(fd, i, (char*)FAT);					// write FAT to disk
+	// write_block(fd, 5, (char*)dirEntries);			// write directory to disk
 	
-	close_disk(fd);
-	printf("%s(%d) unmounted .\n", disk_name, fd);
+	close_disk(fd);										// close disk
+	// printf("%s(%d) unmounted .\n", disk_name, fd);
 	return 0;
 }
 
 // open file
 int sfs_open(char *file_name){
-	char name[FNAME_LENGTH];
 	if (directoryCount() > MAX_FILES)								// max open file check
 		return -1;
 
-	if ((fd = open(file_name, O_RDWR, (mode_t)0777)) < 0){		// open file
+	if ((fd = open(file_name, O_RDWR, (mode_t)0777)) < 0){			// open file
 	    printf("error: %s\n", strerror(errno));
 		return -1;
 	}
 
-	fdNameTable[fd] = file_name;
-	fdPointerTable[fd] = 0;
+	fdNameTable[fd] = file_name;									// fd mapped to name
+	fdPointerTable[fd] = 0;											// file pointer set to begining
 	curFile = getDirIndexFromName(file_name);						// get correct file directory from name
-	dirEntries[curFile].numInstances++;
+	dirEntries[curFile].numInstances++;								// new open instance
 
-	printf("%s(%d) opened.\n", dirEntries[curFile].name, fd);
-
+	// printf("%s(%d) opened.\n", dirEntries[curFile].name, fd);
 	return fd;
 }
 
@@ -101,14 +98,14 @@ int sfs_open(char *file_name){
 // close file
 int sfs_close(int fd){
 
-	if (close(fd) < 0)
+	if (close(fd) < 0)									// close file
 		return -1;
 
-	curFile = getDirIndexFromName(fdNameTable[fd]);			// get correct file directory from name
-	dirEntries[curFile].numInstances--;					// decrement number of open instances of specific file
+	curFile = getDirIndexFromName(fdNameTable[fd]);		// get correct file directory from name
+	dirEntries[curFile].numInstances--;					// close file instance
 
-	fdNameTable[fd] = NULL;									// remove fd from fdNameTable
-	fdPointerTable[fd] = -1;
+	fdNameTable[fd] = NULL;								// set fd name map to unuse
+	fdPointerTable[fd] = -1;							// set file pointer to unused
 
 	printf("%s(%d) closed.\n", dirEntries[curFile].name, fd);
 	return 0;
@@ -117,17 +114,17 @@ int sfs_close(int fd){
 // create file
 int sfs_create(char *file_name){
 
-	curFile = getFreeDirectory();										// get correct file directory from name
+	curFile = getFreeDirectory();												// directory from name
 
-	if (curFile > MAX_FILES)													// max number of files check
+	if (curFile > MAX_FILES)													// max files check
 		return -1;
 
 	if ((fd = open(file_name, O_RDWR | O_CREAT | O_EXCL, (mode_t)0777)) < 0)	// opens file
 		return -1;
 
-	strcpy(dirEntries[curFile].name, file_name);								// update directory strcture information
-	dirEntries[curFile].size = 0;
-	dirEntries[curFile].firstBlock = 0;
+	strcpy(dirEntries[curFile].name, file_name);								// set dir name
+	dirEntries[curFile].size = 0;												// set dir size
+	dirEntries[curFile].firstBlock = 0;											// set dir first block of file
 	printf("%s(%d) created.\n", dirEntries[curFile].name, fd);
 
 	close(fd);																	// close file
@@ -139,11 +136,11 @@ int sfs_create(char *file_name){
 int sfs_delete(char *file_name){	
 	
 	if(access(file_name, F_OK) < 0){									// existence check
-    	printf("Delete on %s failed. File does not exist.\n", file_name);
+    	printf("Delete on %s failed. File DNE.\n", file_name);
     	return -1;
 	}
 
-	curFile = getDirIndexFromName(file_name);
+	curFile = getDirIndexFromName(file_name);							// dir map from file name
 
 	if (dirEntries[curFile].numInstances > 0){							// multiple instances open
 		printf("Delete on %s failed. Open instances: %d\n", file_name, dirEntries[curFile].numInstances);
@@ -151,7 +148,7 @@ int sfs_delete(char *file_name){
 	} else{																// no instances open
 		unlink(file_name);												// delete file
 	
-		curBlock = dirEntries[curFile].firstBlock; 
+		curBlock = dirEntries[curFile].firstBlock; 						// 
 		nextBlock = curBlock;
 		// printf("curblock: %d\n", curBlock);
 		while (FAT[curBlock] > 0){
@@ -179,13 +176,17 @@ int sfs_delete(char *file_name){
 int sfs_write(int fd, void *buf, size_t count){
 	int numBlocks = (count / BLOCK_SIZE) - 1;
 
+
 	if ((curBlock = getFreeBlock()) == -1337){							// disk full
 		printf("Write Error. Disk Full.\n");
 		return 0;
 	}
+	if (dirEntries[curFile].firstBlock != 0)
+		curBlock = getLastBlock(fd);
 
-	dirEntries[curFile].firstBlock = curBlock;				// **possible issue
 	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
+	dirEntries[curFile].firstBlock = curBlock;	
+	
 
 	for (numBlocks; numBlocks >= 0; numBlocks--){
 		if ((write_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)			// write a block
@@ -218,7 +219,8 @@ int sfs_read(int fd, void *buf, size_t count){
 	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
 
 	for (numBlocks; numBlocks >= 0; numBlocks--){
-		if ((read_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)			// write a block
+		printf("pointer: %d\n", fdPointerTable[fd]);
+		if ((read_block(fd, fdPointerTable[fd], (char*)buf)) < 0)			// write a block
 			return -1;
 
 		bytesToRead -= BLOCK_SIZE;									// less bytes to write
@@ -248,7 +250,6 @@ int sfs_seek(int fd, int offset){
 
 
 
-
 // helper functions
 int getFreeBlock(){
 	for (i=FIRST_DATA_BLOCK; i < MAX_BLOCKS; i++){									// find first free block
@@ -256,6 +257,20 @@ int getFreeBlock(){
 			return i;
 	}
 	return -1337;														// disk full
+}
+
+int getLastBlock(int fd){
+	curFile = getDirIndexFromName(fdNameTable[fd]);		// get correct file directory from name
+	int firstBlock = dirEntries[curFile].firstBlock;
+
+	if (firstBlock != 0){
+		for (i = firstBlock; i < MAX_BLOCKS; i++)
+			if (FAT[i] == -1)
+				return i;
+	}
+
+
+
 }
 
 void printFAT(){

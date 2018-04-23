@@ -30,6 +30,7 @@ int sfs_write(int fd, void *buf, size_t count);
 int sfs_seek(int fd, int offset);
 
 int getFreeBlock();
+int getLastBlock(int fd);
 int getDirIndexFromName(char *name);
 int directoryCount();
 int getFreeDirectory();

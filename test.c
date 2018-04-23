@@ -29,36 +29,39 @@ int main(int argc, char* argv[]){
 
 	sfs_create("file0");
 	fd[0] = sfs_open("file0");
-	written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE*5);
+	written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE);
+	written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE);
 	// printf("wn: %d\n", written);
 
-	sfs_create("file1");
-	fd[1] = sfs_open("file1");
-	written = sfs_write(fd[1], wordsToWrite, BLOCK_SIZE);
-	// printf("wn: %d\n", written);
+	// sfs_create("file1");
+	// fd[1] = sfs_open("file1");
+	// written = sfs_write(fd[1], wordsToWrite, BLOCK_SIZE);
+	// // printf("wn: %d\n", written);
 
 
 	// printfdNameTable();
 	// printFAT();
 	// printDirectory();
 
-	// sfs_delete("file0");
+	// // sfs_delete("file0");
 
-	sfs_create("file2");
-	fd[2] = sfs_open("file2");
-	written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
-	written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
+	// sfs_create("file2");
+	// fd[2] = sfs_open("file2");
+	// written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
 	// printf("wn: %d\n", written);
 	// written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
 
+	sfs_seek(fd[0], 0);
+	sfs_read(fd[0], wordsToRead, BLOCK_SIZE);
+	printf("buf: %s\n", wordsToRead);
 
 	printfdNameTable();
-	printFAT();
+	// printFAT();
 	printDirectory();
 
 	sfs_close(fd[0]);
-	sfs_close(fd[1]);
-	sfs_close(fd[2]);
+	// sfs_close(fd[1]);
+	// sfs_close(fd[2]);
 
 	// sfs_close(fd[1]);
 	// sfs_close(fd[2]);

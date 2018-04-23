@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 #include "disk.h"
 #include "sfs.h"
@@ -59,11 +60,12 @@ int read_block(int disk, int block_num, char *buf){
 		return -1;
 	}
 
-	if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE){								// reads one block into buffer
-		printf("Read failure.\n");
+	// if (read(disk, buf, BLOCK_SIZE) != BLOCK_SIZE){								// reads one block into buffer
+	if (read(disk, buf, BLOCK_SIZE) < 0){								// reads one block into buffer
+	    printf("Read failure: %s\n", strerror(errno));
 		return -1;
 	} else
-		// printf("read block: %s\n", buf);
+		printf("read block: %s\n", buf);
 
 	return 0;
 }
