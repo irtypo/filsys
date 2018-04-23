@@ -36,24 +36,25 @@ int main(int argc, char* argv[]){
 	written = sfs_write(fd[1], wordsToWrite, BLOCK_SIZE);
 
 
-	printfdTable();
-	printFAT();
-	printDirectory();
+	// printfdNameTable();
+	// printFAT();
+	// printDirectory();
 
 	// sfs_delete("file0");
 
 	sfs_create("file2");
 	fd[2] = sfs_open("file2");
 	written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
+	// written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
 
+
+	printfdNameTable();
+	printFAT();
+	printDirectory();
 
 	sfs_close(fd[0]);
 	sfs_close(fd[1]);
 	sfs_close(fd[2]);
-
-	printfdTable();
-	printFAT();
-	printDirectory();
 
 	// sfs_close(fd[1]);
 	// sfs_close(fd[2]);
@@ -62,13 +63,13 @@ int main(int argc, char* argv[]){
 	// sfs_delete("file2");
 
 
-	// printfdTable();
+	// printfdNameTable();
 	// printFAT();
 	// printDirectory();
 
 	// unmount_sfs("disk0");
 
-	// printfdTable();
+	// printfdNameTable();
 	// printFAT();
 	// printDirectory();
 

@@ -74,7 +74,6 @@ int read_block(int disk, int block_num, char *buf){
 int write_block(int disk, int block_num, char *buf){
 	ssize_t written;															// number of bytes written
 	
-
 	if (curPosition = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0){		// get tp correct block
 		printf("Failed write seek. cp: %d\n", curPosition);
 	    // printf("error: %s\n", strerror(errno));

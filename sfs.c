@@ -75,7 +75,7 @@ int mount_sfs(char *disk_name){
 	if ((fd = open_disk(disk_name)) < 0)			// open disk
 		return -1;
 
-	fdTable[fd] = disk_name; 
+	fdNameTable[fd] = disk_name; 
 	
 	read_block(fd, 0, superBlock);					// read super block from disk into local memory
 	read_block(fd, 1, (char*)FAT);					// read FAT from disk into local memory
@@ -87,7 +87,7 @@ int mount_sfs(char *disk_name){
 int unmount_sfs(char *disk_name){
 
 	for (i = 0; i < MAX_OPEN_FILES; i++)
-		if (fdTable[i])
+		if (fdNameTable[i])
 			fd = i;
 
 	write_block(fd, 0, (char*)superBlock);					// update FAT on disk
@@ -111,7 +111,8 @@ int sfs_open(char *file_name){
 		return -1;
 	}
 
-	fdTable[fd] = file_name;
+	fdNameTable[fd] = file_name;
+	fdPointerTable[fd] = 0;
 	curFile = getDirIndexFromName(file_name);						// get correct file directory from name
 	dirEntries[curFile].numInstances++;
 
@@ -127,10 +128,11 @@ int sfs_close(int fd){
 	if (close(fd) < 0)
 		return -1;
 
-	curFile = getDirIndexFromName(fdTable[fd]);			// get correct file directory from name
+	curFile = getDirIndexFromName(fdNameTable[fd]);			// get correct file directory from name
 	dirEntries[curFile].numInstances--;					// decrement number of open instances of specific file
 
-	fdTable[fd] = NULL;									// remove fd from fdTable
+	fdNameTable[fd] = NULL;									// remove fd from fdNameTable
+	fdPointerTable[fd] = -1;
 
 	printf("%s(%d) closed.\n", dirEntries[curFile].name, fd);
 	return 0;
@@ -198,7 +200,7 @@ int sfs_delete(char *file_name){
 
 // write to a file
 int sfs_write(int fd, void *buf, size_t count){
-	size_t bytesToWrite = count;
+	int numBlocks = (count / BLOCK_SIZE) - 1;
 
 	if ((curBlock = getFreeBlock()) == -1337){							// disk full
 		printf("Write Error. Disk Full.\n");
@@ -206,46 +208,37 @@ int sfs_write(int fd, void *buf, size_t count){
 	}
 
 	dirEntries[curFile].firstBlock = curBlock;	
-	curFile = getDirIndexFromName(fdTable[fd]);							// find file in directory
+	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
 
-	if (count <= BLOCK_SIZE){										// only writting one block
-		if ((write_block(fd, 0, (char*)buf)) < 0)
+	for (numBlocks; numBlocks >= 0; numBlocks--){
+		printf("loop: %d\n", numBlocks);
+		if ((write_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)			// write a block
 			return -1;
-		
-		dirEntries[curFile].size = count;	
-	}else{															// writing multiple blocks
-		int j = 0;
-		while (bytesToWrite > 0){							// more bytes to write
-			if ((write_block(fd, j, (char*)buf)) < 0)			// write a block
-				return -1;											// using j is fucking awful but it works
-			
-			// printf("Wrote a block.\n");	
-			bytesToWrite -= BLOCK_SIZE;									// less bytes to write
-			FAT[curBlock] = -1;											// block written									
 
-			if (bytesToWrite > 0){
-				if ((nextBlock = getFreeBlock()) == -1337){			// disk full check
-					printf("Write Error. Disk Full.\n");
-					return 0;
-				} else
-					FAT[curBlock] = nextBlock;						// update FAT
-			}
+		FAT[curBlock] = -1;											// block written									
 
-			curBlock = nextBlock;
-			j++;
+		if (numBlocks > 0){
+			if ((nextBlock = getFreeBlock()) == -1337){			// disk full check
+				printf("Write Error. Disk Full.\n");
+				return 0;
+			} else
+				FAT[curBlock] = nextBlock;						// update FAT
 		}
-		dirEntries[curFile].size += count;	
+		curBlock = nextBlock;
+		fdPointerTable[fd] += BLOCK_SIZE;
 	}
+	dirEntries[curFile].size += count;
+
 	FAT[curBlock] = -1;
 
-	return (int)((count - bytesToWrite));
+	return (int)(BLOCK_SIZE * numBlocks);
 }
 
 // read file
 int sfs_read(int fd, void *buf, size_t count){
 	size_t bytesToRead = count;
 
-	curFile = getDirIndexFromName(fdTable[fd]);							// find file in directory
+	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
 	curBlock = dirEntries[curFile].firstBlock;	
 
 	if (count <= BLOCK_SIZE){										// only writting one block
@@ -275,7 +268,7 @@ int sfs_read(int fd, void *buf, size_t count){
 
 
 int sfs_seek(int fd, int offset){
-	curFile = getDirIndexFromName(fdTable[fd]);					// find file in directory
+	curFile = getDirIndexFromName(fdNameTable[fd]);					// find file in directory
 
 	if (offset > dirEntries[curFile].size)						// offset larger than file
 		return -1;
@@ -329,11 +322,9 @@ int getFreeDirectory(){
 			return i;
 }
 
-void printfdTable(){
+void printfdNameTable(){
 	printf("**Printing FD Table:\n");
 	for (i = 0; i < MAX_FILES; i++)
-		if (fdTable[i])
-			printf("\tfdTable[%d]: %s\n", i, fdTable[i]);
+		if (fdNameTable[i])
+			printf("\tfdNameTable[%d]: %s\n", i, fdNameTable[i]);
 }
-
-

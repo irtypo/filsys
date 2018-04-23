@@ -13,7 +13,8 @@
 #define FIRST_DATA_BLOCK 596
 
 
-char *fdTable[MAX_OPEN_FILES];
+char *fdNameTable[MAX_OPEN_FILES];
+int fdPointerTable[MAX_OPEN_FILES];
 
 int make_sfs(char *disk_name);
 int mount_sfs(char *disk_name);
@@ -34,6 +35,7 @@ int directoryCount();
 int getFreeDirectory();
 void printDirectory();
 void printFAT();
-void printfdTable();
+void printfdNameTable();
+void initFDPointers();
 
 #endif
