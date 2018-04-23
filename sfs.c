@@ -24,6 +24,7 @@ int i = 0;
 int curFile = 0;
 int curBlock = 0;
 int nextBlock = 0;
+int numBlocks = 0;
 directory dirEntries[MAX_FILES];	// array of directory entries
 
 // create and open disk
@@ -113,7 +114,6 @@ int sfs_close(int fd){
 
 // create file
 int sfs_create(char *file_name){
-
 	curFile = getFreeDirectory();												// directory from name
 
 	if (curFile > MAX_FILES)													// max files check
@@ -148,89 +148,86 @@ int sfs_delete(char *file_name){
 	} else{																// no instances open
 		unlink(file_name);												// delete file
 	
-		curBlock = dirEntries[curFile].firstBlock; 						// 
+		curBlock = dirEntries[curFile].firstBlock; 						// set current block to first block
 		nextBlock = curBlock;
-		// printf("curblock: %d\n", curBlock);
-		while (FAT[curBlock] > 0){
+		while (FAT[curBlock] > 0){										// multiple blocks to delete
 			nextBlock = FAT[curBlock];
-			FAT[curBlock] = 0;
-			curBlock = nextBlock;												// free block
+			FAT[curBlock] = 0;											// update FAT
+			curBlock = nextBlock;
 		}
 
-		if (FAT[curBlock] == -1)
+		if (FAT[curBlock] == -1)										// update last FAT block
 			FAT[curBlock] = 0;
 			
 
-		strcpy(dirEntries[curFile].name, "");					// clean dir array
+		strcpy(dirEntries[curFile].name, "");							// clean dir entry
 		dirEntries[curFile].size = 0;
 		dirEntries[curFile].firstBlock = 0;
 		dirEntries[curFile].numInstances = 0;
 
-		printf("%s deleted.\n", file_name);
+		// printf("%s deleted.\n", file_name);
 	}
 	return 0;
 }
 
 // write to a file
-// FAT doesnt account for multiple writes to the same file properly
 int sfs_write(int fd, void *buf, size_t count){
-	int numBlocks = (count / BLOCK_SIZE) - 1;
+	numBlocks = (count / BLOCK_SIZE) - 1;							// calculates number of blocks to be written
 
 
 	if ((curBlock = getFreeBlock()) == -1337){							// disk full
 		printf("Write Error. Disk Full.\n");
 		return 0;
 	}
-	if (dirEntries[curFile].firstBlock != 0)
+
+	if (dirEntries[curFile].firstBlock != 0)							// file already has some blocks
 		curBlock = getLastBlock(fd);
 
-	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
+	curFile = getDirIndexFromName(fdNameTable[fd]);						// find file in directory
 	dirEntries[curFile].firstBlock = curBlock;	
 	
 
-	for (numBlocks; numBlocks >= 0; numBlocks--){
-		if ((write_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)			// write a block
+	for (numBlocks; numBlocks >= 0; numBlocks--){						// loop until no more blocks
+		if ((write_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)
 			return -1;
 
-		FAT[curBlock] = -1;											// block written									
+		FAT[curBlock] = -1;												// block written place holder								
 
 		if (numBlocks > 0){
-			if ((nextBlock = getFreeBlock()) == -1337){			// disk full check
+			if ((nextBlock = getFreeBlock()) == -1337){					// disk full check
 				printf("Write Error. Disk Full.\n");
 				return 0;
 			} else
-				FAT[curBlock] = nextBlock;						// update FAT
+				FAT[curBlock] = nextBlock;								// update FAT
 		}
-		curBlock = nextBlock;
-		fdPointerTable[fd] += BLOCK_SIZE;
+		curBlock = nextBlock;											// update current block
+		fdPointerTable[fd] += BLOCK_SIZE;								// move file pointer accordingly
 	}
-	dirEntries[curFile].size += count;
-	FAT[curBlock] = -1;
+	dirEntries[curFile].size += count;									// update directory size
+	FAT[curBlock] = -1;													// update last FAT block
 
 	return (int)count;
 }
 
 // read file
 int sfs_read(int fd, void *buf, size_t count){
-	int numBlocks = (count / BLOCK_SIZE) - 1;
-	size_t bytesToRead = count;
+	numBlocks = (count / BLOCK_SIZE) - 1;							// claculate number of blocks to be read
 
-	curBlock = dirEntries[curFile].firstBlock;	
-	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
+	curBlock = dirEntries[curFile].firstBlock;						// update current block
+	curFile = getDirIndexFromName(fdNameTable[fd]);					// find file in directory
 
-	for (numBlocks; numBlocks >= 0; numBlocks--){
-		printf("pointer: %d\n", fdPointerTable[fd]);
-		if ((read_block(fd, fdPointerTable[fd], (char*)buf)) < 0)			// write a block
+	for (numBlocks; numBlocks >= 0; numBlocks--){					// loop until no more blocks
+		// printf("pointer: %d\n", fdPointerTable[fd]);
+		if ((read_block(fd, fdPointerTable[fd], (char*)buf)) < 0)
 			return -1;
 
-		bytesToRead -= BLOCK_SIZE;									// less bytes to write
-		nextBlock = curBlock;
-		while (FAT[curBlock] > 0){
+		nextBlock = curBlock;										// update next block
+		while (FAT[curBlock] > 0){									// more blocks to be read
 			nextBlock = FAT[curBlock];
-			curBlock = nextBlock;												// free block
+			curBlock = nextBlock;
 		}
 
-		fdPointerTable[fd] += lseek(fd, BLOCK_SIZE, SEEK_SET);
+		fdPointerTable[fd] += lseek(fd, BLOCK_SIZE, SEEK_SET);		// update file pointer
 	}
 
 	return (int)count;
@@ -238,12 +235,12 @@ int sfs_read(int fd, void *buf, size_t count){
 
 // seek through file
 int sfs_seek(int fd, int offset){
-	curFile = getDirIndexFromName(fdNameTable[fd]);					// find file in directory
+	curFile = getDirIndexFromName(fdNameTable[fd]);				// find file in directory
 
 	if (offset > dirEntries[curFile].size)						// offset larger than file
 		return -1;
 
-	fdPointerTable[fd] = lseek(fd, offset, SEEK_SET);							// seek
+	fdPointerTable[fd] = lseek(fd, offset, SEEK_SET);			// update file pointer
 
 	return 0;
 }
@@ -252,11 +249,11 @@ int sfs_seek(int fd, int offset){
 
 // helper functions
 int getFreeBlock(){
-	for (i=FIRST_DATA_BLOCK; i < MAX_BLOCKS; i++){									// find first free block
+	for (i=FIRST_DATA_BLOCK; i < MAX_BLOCKS; i++){				// find first free block
 		if (FAT[i] == 0)
 			return i;
 	}
-	return -1337;														// disk full
+	return -1337;												// disk full
 }
 
 int getLastBlock(int fd){
