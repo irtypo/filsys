@@ -37,5 +37,6 @@ void printDirectory();
 void printFAT();
 void printfdNameTable();
 void initFDPointers();
+void fillFAT();
 
 #endif

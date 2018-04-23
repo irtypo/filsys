@@ -18,8 +18,6 @@
 #include "disk.h"
 #include "sfs.h"
 
-size_t curPosition;		// current pointer position
-
 int create_disk(char* filename, size_t nbytes){
 	int fd;											// file descriptor
 
@@ -29,7 +27,7 @@ int create_disk(char* filename, size_t nbytes){
         return -1;
     }
   
-	curPosition = lseek(fd, nbytes - 1, SEEK_SET);		// stretch file to file size
+	lseek(fd, nbytes - 1, SEEK_SET);		// stretch file to file size
 
 	if ((write(fd, "\0", 1)) < 0) {					// stretch file
 		printf("Error stretching disk.\n");
@@ -37,7 +35,7 @@ int create_disk(char* filename, size_t nbytes){
         return -1;
     }
   
-  	curPosition = lseek(fd, 0, SEEK_SET);				// reposition file pointer
+  	lseek(fd, 0, SEEK_SET);				// reposition file pointer
 	printf("Disk created. fd: %d\n", fd);
 
 	close(fd);
@@ -74,8 +72,8 @@ int read_block(int disk, int block_num, char *buf){
 int write_block(int disk, int block_num, char *buf){
 	ssize_t written;															// number of bytes written
 	
-	if (curPosition = lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0){		// get tp correct block
-		printf("Failed write seek. cp: %d\n", curPosition);
+	if (lseek(disk, (block_num * BLOCK_SIZE), SEEK_SET) < 0){		// get tp correct block
+		printf("Failed write seek.\n");
 	    // printf("error: %s\n", strerror(errno));
 		return -1;
 	}
@@ -84,7 +82,7 @@ int write_block(int disk, int block_num, char *buf){
 		printf("Write failure.\n");
 		return -1;
 	}
-	printf("wrote %d bytes\n", written);
+	// printf("wrote %d bytes\n", written);
 
 
 	return 0;

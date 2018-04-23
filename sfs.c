@@ -36,31 +36,7 @@ int make_sfs(char *disk_name){
 	if ((fd = open_disk(disk_name)) < 0)							// open disk
 		return -1;
 
-	for (i=0; i < BLOCK_SIZE; i++){					// fill FAT
-		switch(i){
-			case 0:
-				FAT[i] = -1;
-			 	break;
-			 case 1:
-			 	FAT[i] = 2;
-			 	break;
-			 case 2:
-			 	FAT[i] = 3;
-			 	break;
-			 case 3:
-			 	FAT[i] = 4;
-			 	break;
-			 case 4:
-			 	FAT[i] = -1;
-			 	break;
-			 case 5:
-			 	FAT[i] = -1;
-			 	break;
-			 default:
-			 	FAT[i] = 0;
-			 	break;
-		}
-	}
+	fillFAT();														// fill FAT control blocks
 
 	write_block(fd, 0, superBlock);					// write super block to disk
 	write_block(fd, 1, (char*)FAT);					// write FAT to disk
@@ -199,6 +175,7 @@ int sfs_delete(char *file_name){
 }
 
 // write to a file
+// FAT doesnt account for multiple writes to the same file properly
 int sfs_write(int fd, void *buf, size_t count){
 	int numBlocks = (count / BLOCK_SIZE) - 1;
 
@@ -207,11 +184,10 @@ int sfs_write(int fd, void *buf, size_t count){
 		return 0;
 	}
 
-	dirEntries[curFile].firstBlock = curBlock;	
+	dirEntries[curFile].firstBlock = curBlock;				// **possible issue
 	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
 
 	for (numBlocks; numBlocks >= 0; numBlocks--){
-		printf("loop: %d\n", numBlocks);
 		if ((write_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)			// write a block
 			return -1;
 
@@ -228,57 +204,52 @@ int sfs_write(int fd, void *buf, size_t count){
 		fdPointerTable[fd] += BLOCK_SIZE;
 	}
 	dirEntries[curFile].size += count;
-
 	FAT[curBlock] = -1;
 
-	return (int)(BLOCK_SIZE * numBlocks);
+	return (int)count;
 }
 
 // read file
 int sfs_read(int fd, void *buf, size_t count){
+	int numBlocks = (count / BLOCK_SIZE) - 1;
 	size_t bytesToRead = count;
 
-	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
 	curBlock = dirEntries[curFile].firstBlock;	
+	curFile = getDirIndexFromName(fdNameTable[fd]);							// find file in directory
 
-	if (count <= BLOCK_SIZE){										// only writting one block
-		if ((read_block(fd, curBlock, (char*)buf)) < 0)
+	for (numBlocks; numBlocks >= 0; numBlocks--){
+		if ((read_block(fd, (fdPointerTable[fd] / BLOCK_SIZE), (char*)buf)) < 0)			// write a block
 			return -1;
-		
-		lseek(fd, BLOCK_SIZE, SEEK_SET);
-	}else{															// writing multiple blocks
-		while (bytesToRead > 0){										// more bytes to write
-			if ((read_block(fd, curBlock, (char*)buf)) < 0)			// write a block
-				return -1;
-			
-			// printf("Read a block.\n");	
-			bytesToRead -= BLOCK_SIZE;									// less bytes to write
-			nextBlock = curBlock;
-			while (FAT[curBlock] > 0){
-				nextBlock = FAT[curBlock];
-				curBlock = nextBlock;												// free block
-			}
-			
-			lseek(fd, BLOCK_SIZE, SEEK_SET);
+
+		bytesToRead -= BLOCK_SIZE;									// less bytes to write
+		nextBlock = curBlock;
+		while (FAT[curBlock] > 0){
+			nextBlock = FAT[curBlock];
+			curBlock = nextBlock;												// free block
 		}
+
+		fdPointerTable[fd] += lseek(fd, BLOCK_SIZE, SEEK_SET);
 	}
 
-	return (int)(count - bytesToRead);
+	return (int)count;
 }
 
-
+// seek through file
 int sfs_seek(int fd, int offset){
 	curFile = getDirIndexFromName(fdNameTable[fd]);					// find file in directory
 
 	if (offset > dirEntries[curFile].size)						// offset larger than file
 		return -1;
 
-	fd = lseek(fd, offset, SEEK_SET);							// seek
+	fdPointerTable[fd] = lseek(fd, offset, SEEK_SET);							// seek
 
 	return 0;
 }
 
 
+
+
+// helper functions
 int getFreeBlock(){
 	for (i=FIRST_DATA_BLOCK; i < MAX_BLOCKS; i++){									// find first free block
 		if (FAT[i] == 0)
@@ -327,4 +298,33 @@ void printfdNameTable(){
 	for (i = 0; i < MAX_FILES; i++)
 		if (fdNameTable[i])
 			printf("\tfdNameTable[%d]: %s\n", i, fdNameTable[i]);
+}
+
+// it looks nicer down here
+void fillFAT(){
+	for (i=0; i < BLOCK_SIZE; i++){
+		switch(i){
+			case 0:
+				FAT[i] = -1;
+			 	break;
+			 case 1:
+			 	FAT[i] = 2;
+			 	break;
+			 case 2:
+			 	FAT[i] = 3;
+			 	break;
+			 case 3:
+			 	FAT[i] = 4;
+			 	break;
+			 case 4:
+			 	FAT[i] = -1;
+			 	break;
+			 case 5:
+			 	FAT[i] = -1;
+			 	break;
+			 default:
+			 	FAT[i] = 0;
+			 	break;
+		}
+	}
 }

@@ -30,10 +30,12 @@ int main(int argc, char* argv[]){
 	sfs_create("file0");
 	fd[0] = sfs_open("file0");
 	written = sfs_write(fd[0], wordsToWrite, BLOCK_SIZE*5);
+	// printf("wn: %d\n", written);
 
 	sfs_create("file1");
 	fd[1] = sfs_open("file1");
 	written = sfs_write(fd[1], wordsToWrite, BLOCK_SIZE);
+	// printf("wn: %d\n", written);
 
 
 	// printfdNameTable();
@@ -45,6 +47,8 @@ int main(int argc, char* argv[]){
 	sfs_create("file2");
 	fd[2] = sfs_open("file2");
 	written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
+	written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
+	// printf("wn: %d\n", written);
 	// written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
 
 
