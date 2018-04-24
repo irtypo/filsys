@@ -37,7 +37,7 @@ int create_disk(char* filename, size_t nbytes){
     }
   
   	lseek(fd, 0, SEEK_SET);				// reposition file pointer
-	printf("Disk created. fd: %d\n", fd);
+	// printf("Disk created. fd: %d\n", fd);
 
 	close(fd);
 	return 0;
@@ -92,7 +92,6 @@ int write_block(int disk, int block_num, char *buf){
 
 
 int close_disk(int disk){
-	// remove(disk);
 	// printf("closing fd:%d\n", disk);
 	return close(disk);
 }

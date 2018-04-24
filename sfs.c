@@ -70,7 +70,9 @@ int unmount_sfs(char *disk_name){
 	for (i = 1; i < 5; i++)
 		write_block(fd, i, (char*)FAT);					// write FAT to disk
 	// write_block(fd, 5, (char*)dirEntries);			// write directory to disk
-	
+
+	fdNameTable[fd] = NULL;								// set fd name map to unuse
+	fdPointerTable[fd] = -1;							// set file pointer to unused
 	close_disk(fd);										// close disk
 	// printf("%s(%d) unmounted .\n", disk_name, fd);
 	return 0;
@@ -125,7 +127,7 @@ int sfs_create(char *file_name){
 	strcpy(dirEntries[curFile].name, file_name);								// set dir name
 	dirEntries[curFile].size = 0;												// set dir size
 	dirEntries[curFile].firstBlock = 0;											// set dir first block of file
-	printf("%s(%d) created.\n", dirEntries[curFile].name, fd);
+	// printf("%s(%d) created.\n", dirEntries[curFile].name, fd);
 
 	close(fd);																	// close file
 	return 0;

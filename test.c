@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
 
 	sfs_seek(fd[0], 0);
 	sfs_read(fd[0], wordsToRead, BLOCK_SIZE);
-	printf("buf: %s\n", wordsToRead);
+	// printf("buf: %s\n", wordsToRead);
 
 	printfdNameTable();
 	// printFAT();
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]){
 	// sfs_close(fd[1]);
 	// sfs_close(fd[2]);
 
-	// sfs_delete("file1");
+	sfs_delete("file0");
 	// sfs_delete("file2");
 
 
@@ -74,11 +74,11 @@ int main(int argc, char* argv[]){
 	// printFAT();
 	// printDirectory();
 
-	// unmount_sfs("disk0");
+	unmount_sfs("disk0");
 
-	// printfdNameTable();
-	// printFAT();
-	// printDirectory();
+	printfdNameTable();
+	printFAT();
+	printDirectory();
 
 	return 0;
 }
