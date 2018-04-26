@@ -51,6 +51,7 @@ int main(int argc, char* argv[]){
 	// printf("wn: %d\n", written);
 	// written = sfs_write(fd[2], wordsToWrite, BLOCK_SIZE*3);
 
+	printFAT();
 	sfs_seek(fd[0], 0);
 	sfs_read(fd[0], wordsToRead, BLOCK_SIZE);
 	// printf("buf: %s\n", wordsToRead);

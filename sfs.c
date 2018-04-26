@@ -40,7 +40,7 @@ int make_sfs(char *disk_name){
 	fillFAT();														// fill FAT control blocks
 
 	write_block(fd, 0, superBlock);									// write super block to disk
-	write_block(fd, 1, (char*)FAT);									// write FAT to disk
+	write_block(fd, 1, (char*)FAT);									// write FAT to disk, check return value
 	// write_block(fd, 5, (char*)dirEntries);						// write directory to disk
 
 	close_disk(fd);													// close disk
@@ -289,7 +289,7 @@ void printDirectory(){
 	printf("**Printing Directory:\n");
 	for (i = 0; i < MAX_FILES; i++)
 		if (strcmp(dirEntries[i].name, "") != 0)
-			printf("\tdir[%d]. name: %s. size: %d\n", i, dirEntries[i].name, dirEntries[i].size);
+			printf("\tdir[%d]. name: %s. size: %d\n  firstblock: %d\n", i, dirEntries[i].name, dirEntries[i].size, dirEntries[i].firstBlock);
 }
 
 int directoryCount(){
